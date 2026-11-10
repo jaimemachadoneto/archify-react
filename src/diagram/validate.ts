@@ -4,6 +4,8 @@ import type { Problem, ProblemCode } from "./spec";
 export const MAX_NODES = 500;
 export const MAX_EDGES = 2000;
 export const MAX_LABEL_LENGTH = 200;
+// A fixed position beyond this size gives the layout an infinite or a meaningless box.
+export const MAX_POSITION = 1_000_000;
 
 const DIRECTIONS = ["RIGHT", "DOWN"];
 const STATES = ["used", "skipped", "failed"];
@@ -128,8 +130,14 @@ export function validateSpec(spec: unknown): Problem[] {
         shape(`${path}.position`, "the position must be an object with x and y.");
       } else {
         for (const axis of ["x", "y"]) {
-          if (typeof position[axis] !== "number" || !Number.isFinite(position[axis])) {
+          const value = position[axis];
+          if (typeof value !== "number" || !Number.isFinite(value)) {
             shape(`${path}.position.${axis}`, `${axis} must be a finite number.`);
+          } else if (Math.abs(value) > MAX_POSITION) {
+            shape(
+              `${path}.position.${axis}`,
+              `${axis} must be between -${MAX_POSITION} and ${MAX_POSITION}.`,
+            );
           }
         }
       }

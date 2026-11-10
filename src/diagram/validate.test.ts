@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateSpec, MAX_EDGES, MAX_LABEL_LENGTH, MAX_NODES } from "./validate";
+import { validateSpec, MAX_EDGES, MAX_LABEL_LENGTH, MAX_NODES, MAX_POSITION } from "./validate";
 import type { DiagramSpec, Problem } from "./spec";
 
 function baseSpec(): DiagramSpec {
@@ -218,6 +218,20 @@ describe("validateSpec with a spec of the wrong shape", () => {
     const spec = { version: 1, nodes: [{ id: "a", label: "A", kind: "loop" }], edges: [] };
     expect(codes(spec)).toEqual(["INVALID_SHAPE"]);
     expect(paths(spec)).toEqual(["nodes[0].kind"]);
+  });
+
+  it("reports a position beyond the limit, so the layout never gets an infinite size", () => {
+    const problems = validateSpec({
+      version: 1,
+      nodes: [
+        { id: "a", label: "A", position: { x: 1.7e308, y: 0 } },
+        { id: "b", label: "B", position: { x: 0, y: -(MAX_POSITION + 1) } },
+        { id: "c", label: "C", position: { x: MAX_POSITION, y: -MAX_POSITION } },
+      ],
+      edges: [],
+    });
+    expect(problems.map((p) => p.path)).toEqual(["nodes[0].position.x", "nodes[1].position.y"]);
+    expect(problems.every((p) => p.code === "INVALID_SHAPE")).toBe(true);
   });
 
   it("reports a position with a coordinate that is not a finite number", () => {
