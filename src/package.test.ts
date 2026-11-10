@@ -105,6 +105,13 @@ describe("packed package", () => {
       "findOverlaps",
       "reach",
       "validateSpec",
+      "DiagramLane",
+      "LaneBox",
+      "EdgeSection",
+      "ProblemCode",
+      "MAX_NODES",
+      "MAX_EDGES",
+      "MAX_LABEL_LENGTH",
     ]) {
       expect(indexDts, name).toMatch(new RegExp(`\\b${name}\\b`));
     }

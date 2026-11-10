@@ -1,9 +1,14 @@
 export interface DiagramSpec {
   version: 1;
   direction?: "RIGHT" | "DOWN";
-  lanes?: Array<{ id: string; label: string }>;
+  lanes?: DiagramLane[];
   nodes: DiagramNode[];
   edges: DiagramEdge[];
+}
+
+export interface DiagramLane {
+  id: string;
+  label: string;
 }
 
 export interface DiagramNode {
@@ -25,17 +30,21 @@ export interface DiagramEdge {
   animated?: boolean;
 }
 
+export type ProblemCode =
+  | "INVALID_SHAPE"
+  | "INVALID_VERSION"
+  | "TOO_MANY_NODES"
+  | "TOO_MANY_EDGES"
+  | "LABEL_TOO_LONG"
+  | "DUPLICATE_LANE_ID"
+  | "DUPLICATE_NODE_ID"
+  | "DUPLICATE_EDGE_ID"
+  | "EDGE_SOURCE_NOT_FOUND"
+  | "EDGE_TARGET_NOT_FOUND"
+  | "NODE_LANE_NOT_FOUND";
+
 export interface Problem {
-  code: string;
+  code: ProblemCode;
   message: string;
   path?: string;
 }
-
-export const spec: DiagramSpec = {
-  version: 1,
-  nodes: [
-    { id: "a", label: "A" },
-    { id: "b", label: "B" },
-  ],
-  edges: [{ id: "e1", source: "a", target: "b" }],
-};

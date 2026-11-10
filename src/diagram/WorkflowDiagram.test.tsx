@@ -186,6 +186,13 @@ describe("WorkflowDiagram", () => {
     expect(layoutDiagram).not.toHaveBeenCalled();
   });
 
+  it("shows an alert for a spec of the wrong shape and does not throw", () => {
+    const wrongShape = { version: 1, nodes: [{ id: "alpha", label: "Alpha" }] };
+    draw(wrongShape as unknown as DiagramSpec);
+    expect(screen.getByRole("alert")).toHaveTextContent("edges");
+    expect(layoutDiagram).not.toHaveBeenCalled();
+  });
+
   it("shows an alert when the layout fails", async () => {
     vi.mocked(layoutDiagram).mockRejectedValueOnce(new Error("ELK could not lay out the graph"));
     draw(baseSpec);

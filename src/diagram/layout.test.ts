@@ -231,24 +231,28 @@ describe("layoutDiagram", () => {
     expectInside(b, box);
   });
 
-  it("does not recalculate the edge sections for a node with a fixed position", async () => {
-    const free: DiagramSpec = {
+  it("returns no sections for an edge to or from a node with a fixed position", async () => {
+    const spec: DiagramSpec = {
       version: 1,
       direction: "RIGHT",
       nodes: [
         { id: "a", label: "A" },
-        { id: "b", label: "B" },
+        { id: "b", label: "B", position: { x: 500, y: 300 } },
+        { id: "c", label: "C" },
+        { id: "d", label: "D" },
       ],
-      edges: [{ id: "e1", source: "a", target: "b" }],
+      edges: [
+        { id: "to-fixed", source: "a", target: "b" },
+        { id: "from-fixed", source: "b", target: "c" },
+        { id: "free", source: "c", target: "d" },
+      ],
     };
-    const fixed: DiagramSpec = {
-      ...free,
-      nodes: [free.nodes[0], { ...free.nodes[1], position: { x: 500, y: 300 } }],
-    };
-    const freeResult = await layoutDiagram(free);
-    const fixedResult = await layoutDiagram(fixed);
-    // The limit is known: the edge keeps the route that ELK found for the free node.
-    expect(fixedResult.edges[0].sections).toEqual(freeResult.edges[0].sections);
+    const result = await layoutDiagram(spec);
+    const sections = (id: string) => result.edges.find((e) => e.id === id)!.sections;
+    // The route of ELK ends at the free place of the node, so the view draws between the handles.
+    expect(sections("to-fixed")).toEqual([]);
+    expect(sections("from-fixed")).toEqual([]);
+    expect(sections("free").length).toBeGreaterThan(0);
   });
 
   it("gives the same result for the same spec (deterministic)", async () => {
@@ -294,5 +298,68 @@ describe("layoutDiagram", () => {
     };
     const result = await layoutDiagram(spec);
     expect(findOverlaps(result)).toHaveLength(0);
+  });
+
+  it("keeps a node ID with the internal lane prefix apart from the lane", async () => {
+    const spec: DiagramSpec = {
+      version: 1,
+      lanes: [{ id: "x", label: "X" }],
+      nodes: [
+        { id: "lane:x", label: "Lane-like ID" },
+        { id: "a", label: "A", lane: "x" },
+      ],
+      edges: [{ id: "e1", source: "lane:x", target: "a" }],
+    };
+    const result = await layoutDiagram(spec);
+    expect(result.lanes.map((l) => l.id)).toEqual(["x"]);
+    const laneLike = result.nodes.find((n) => n.id === "lane:x")!;
+    expect(Number.isFinite(laneLike.x)).toBe(true);
+    expect(Number.isFinite(laneLike.y)).toBe(true);
+    expectInside(
+      result.nodes.find((n) => n.id === "a")!,
+      result.lanes[0],
+    );
+    expect(result.edges[0].sections.length).toBeGreaterThan(0);
+  });
+
+  it("keeps a node ID equal to an edge ID or to the root ID apart", async () => {
+    const spec: DiagramSpec = {
+      version: 1,
+      nodes: [
+        { id: "root", label: "Root" },
+        { id: "e1", label: "E1" },
+      ],
+      edges: [{ id: "e1", source: "root", target: "e1" }],
+    };
+    const result = await layoutDiagram(spec);
+    expect(result.nodes.map((n) => n.id)).toEqual(["root", "e1"]);
+    expect(result.edges[0].sections.length).toBeGreaterThan(0);
+  });
+
+  it("rejects a spec with an unknown edge target and names the problem", async () => {
+    const spec: DiagramSpec = {
+      version: 1,
+      nodes: [{ id: "a", label: "A" }],
+      edges: [{ id: "e1", source: "a", target: "missing" }],
+    };
+    await expect(layoutDiagram(spec)).rejects.toThrow(/"missing"/);
+  });
+
+  it("rejects a spec with a duplicate node ID and names each problem", async () => {
+    const spec: DiagramSpec = {
+      version: 1,
+      nodes: [
+        { id: "a", label: "A" },
+        { id: "a", label: "A again" },
+      ],
+      edges: [{ id: "e1", source: "a", target: "ghost" }],
+    };
+    const error = await layoutDiagram(spec).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/Node ID "a" occurs more than once/);
+    expect((error as Error).message).toMatch(/"ghost"/);
   });
 });

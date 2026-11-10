@@ -1,5 +1,6 @@
 import type { ElkNode, ElkExtendedEdge } from "elkjs/lib/elk-api";
 import type { DiagramSpec, DiagramNode, DiagramEdge } from "./spec";
+import { validateSpec } from "./validate";
 
 interface Point {
   x: number;
@@ -22,33 +23,41 @@ export interface EdgeSection {
 
 export interface LayoutResult {
   nodes: Array<DiagramNode & { x: number; y: number; width: number; height: number }>;
-  // Absolute coordinates. The sections of an edge to a node with a fixed
-  // position are not recalculated: they keep the route that ELK found for the free node.
+  // Absolute coordinates. An edge to or from a node with a fixed position has no sections.
   edges: Array<DiagramEdge & { sections: EdgeSection[] }>;
   lanes: LaneBox[];
 }
 
 const NODE_WIDTH = 100;
 const NODE_HEIGHT = 50;
-const LANE_PREFIX = "lane:";
+// Separate prefixes keep a node ID, a lane ID and an edge ID from a collision in ELK.
+const NODE_PREFIX = "n:";
+const LANE_PREFIX = "l:";
+const EDGE_PREFIX = "e:";
 
 export async function layoutDiagram(spec: DiagramSpec): Promise<LayoutResult> {
+  const problems = validateSpec(spec);
+  if (problems.length > 0) {
+    throw new Error(
+      `The diagram spec is not valid: ${problems.map((problem) => problem.message).join("; ")}`,
+    );
+  }
+
   // Dynamic import keeps ELK out of the main bundle.
   const { default: ELK } = await import("elkjs/lib/elk.bundled.js");
   const elk = new ELK();
 
-  const laneIds = new Set(spec.lanes?.map((lane) => lane.id));
   const elkNodes = new Map<string, ElkNode>();
   for (const node of spec.nodes) {
     elkNodes.set(node.id, {
-      id: node.id,
+      id: NODE_PREFIX + node.id,
       labels: [{ text: node.label }],
       width: NODE_WIDTH,
       height: NODE_HEIGHT,
     });
   }
 
-  // A lane is an ELK parent node. A node with an unknown lane stays at the root.
+  // A lane is an ELK parent node.
   const rootChildren: ElkNode[] = [];
   const laneNodes = new Map<string, ElkNode>();
   for (const lane of spec.lanes ?? []) {
@@ -60,7 +69,7 @@ export async function layoutDiagram(spec: DiagramSpec): Promise<LayoutResult> {
   }
   for (const node of spec.nodes) {
     const elkNode = elkNodes.get(node.id)!;
-    const laneNode = node.lane && laneIds.has(node.lane) ? laneNodes.get(node.lane) : undefined;
+    const laneNode = node.lane ? laneNodes.get(node.lane) : undefined;
     (laneNode?.children ?? rootChildren).push(elkNode);
   }
   for (const laneNode of laneNodes.values()) {
@@ -68,9 +77,9 @@ export async function layoutDiagram(spec: DiagramSpec): Promise<LayoutResult> {
   }
 
   const edges: ElkExtendedEdge[] = spec.edges.map((edge) => ({
-    id: edge.id,
-    sources: [edge.source],
-    targets: [edge.target],
+    id: EDGE_PREFIX + edge.id,
+    sources: [NODE_PREFIX + edge.source],
+    targets: [NODE_PREFIX + edge.target],
     labels: edge.label ? [{ text: edge.label }] : [],
   }));
 
@@ -104,13 +113,13 @@ export async function layoutDiagram(spec: DiagramSpec): Promise<LayoutResult> {
         width: child.width ?? NODE_WIDTH,
         height: child.height ?? NODE_HEIGHT,
       };
-      if (child.id.startsWith(LANE_PREFIX) && laneNodes.has(child.id.slice(LANE_PREFIX.length))) {
+      if (child.id.startsWith(LANE_PREFIX)) {
         const laneId = child.id.slice(LANE_PREFIX.length);
         lanes.push({ ...box, id: laneId });
         laneOrigins.set(laneId, { x: box.x, y: box.y });
         walk(child.children ?? [], { x: box.x, y: box.y });
       } else {
-        positions.set(child.id, box);
+        positions.set(child.id.slice(NODE_PREFIX.length), box);
       }
     }
   };
@@ -145,8 +154,11 @@ export async function layoutDiagram(spec: DiagramSpec): Promise<LayoutResult> {
   // ELK gives the points of an edge relative to the lowest common parent of its
   // two nodes. An edge inside one lane is relative to that lane, any other edge to the root.
   const laneOf = new Map(spec.nodes.map((node) => [node.id, node.lane]));
+  const fixed = new Set(spec.nodes.filter((node) => node.position).map((node) => node.id));
   const laidOutEdges = spec.edges.map((edge) => {
-    const elkEdge = result.edges?.find((e) => e.id === edge.id);
+    // The route of ELK ends at the place that ELK chose, not at the fixed position.
+    if (fixed.has(edge.source) || fixed.has(edge.target)) return { ...edge, sections: [] };
+    const elkEdge = result.edges?.find((e) => e.id === EDGE_PREFIX + edge.id);
     const sourceLane = laneOf.get(edge.source);
     const sameLane = sourceLane !== undefined && sourceLane === laneOf.get(edge.target);
     const origin = (sameLane && laneOrigins.get(sourceLane)) || { x: 0, y: 0 };
