@@ -171,6 +171,19 @@ describe("edge arrow and label", () => {
     expect(marker).toHaveAttribute("data-state", "failed");
   });
 
+  it("draws the label last in the edge group, so the dot never covers it", async () => {
+    const container = await draw(specWith({ label: "yes", animated: true }));
+    const group = container.querySelector(".archify-edge-group");
+    expect(group).not.toBeNull();
+    const children = Array.from(group!.children);
+    const dot = children.findIndex((child) => child.classList.contains("archify-edge-dot"));
+    const path = children.findIndex((child) => child.classList.contains("archify-edge"));
+    expect(path).toBeGreaterThanOrEqual(0);
+    expect(dot).toBeGreaterThan(path);
+    expect(children.at(-1)).toHaveClass("react-flow__edge-textwrapper");
+    expect(group!.querySelectorAll("animateMotion")).toHaveLength(1);
+  });
+
   it("puts the label in the middle of the edge, not at its end", async () => {
     const container = await draw(specWith({ label: "yes" }));
     const path = container.querySelector(".archify-edge")?.getAttribute("d") ?? "";

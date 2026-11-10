@@ -245,7 +245,9 @@ describe("WorkflowDiagram", () => {
       Array.from(container.querySelectorAll("button[data-dimmed]")).map((b) =>
         b.textContent?.trim(),
       );
-    const edge = (container: HTMLElement, id: string) => container.querySelector(`path#${id}`);
+    // The edge group holds the path, the dot and the label, and carries data-dimmed.
+    const edge = (container: HTMLElement, id: string) =>
+      container.querySelector(`path#${id}`)?.closest(".archify-edge-group") ?? null;
 
     it("dims the nodes outside the reach of a hovered node", async () => {
       const { container } = draw(forkSpec);
@@ -268,11 +270,25 @@ describe("WorkflowDiagram", () => {
     it("also dims the moving dot of a dimmed edge", async () => {
       const { container } = draw(forkSpec);
       const b = await node("Node B");
-      expect(container.querySelector(".archify-edge-dot")).not.toBeNull();
+      const dotGroup = () =>
+        container.querySelector(".archify-edge-dot")?.closest(".archify-edge-group");
+      expect(dotGroup()).toBeTruthy();
+      expect(dotGroup()).toBe(edge(container, "ac"));
       await userEvent.hover(b);
-      expect(container.querySelector(".archify-edge-dot")).toHaveAttribute("data-dimmed", "true");
+      expect(dotGroup()).toHaveAttribute("data-dimmed", "true");
       await userEvent.unhover(b);
-      expect(container.querySelector(".archify-edge-dot")).not.toHaveAttribute("data-dimmed");
+      expect(dotGroup()).not.toHaveAttribute("data-dimmed");
+    });
+
+    it("also dims the label of a dimmed edge", async () => {
+      const labelled: DiagramSpec = {
+        ...forkSpec,
+        edges: forkSpec.edges.map((e) => (e.id === "cd" ? { ...e, label: "next" } : e)),
+      };
+      draw(labelled);
+      await userEvent.hover(await node("Node B"));
+      const label = await screen.findByText("next");
+      expect(label.closest(".archify-edge-group")).toHaveAttribute("data-dimmed", "true");
     });
 
     it("never dims a lane label, also when it dims a node of the lane", async () => {

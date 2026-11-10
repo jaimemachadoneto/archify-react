@@ -1,5 +1,11 @@
 import { useId, type FC } from "react";
-import { BaseEdge, getSmoothStepPath, type Edge as FlowEdge, type EdgeProps } from "@xyflow/react";
+import {
+  BaseEdge,
+  EdgeText,
+  getSmoothStepPath,
+  type Edge as FlowEdge,
+  type EdgeProps,
+} from "@xyflow/react";
 import type { DiagramEdge } from "../spec";
 import type { EdgeSection } from "../layout";
 import { useMediaQuery } from "../useMediaQuery";
@@ -84,22 +90,28 @@ const FlowEdgeView: FC<EdgeProps<DiagramFlowEdge>> = ({
           <path d="M 0 0 L 8 4 L 0 8 z" />
         </marker>
       </defs>
-      <BaseEdge
-        id={id}
-        path={path}
-        labelX={routed?.labelX ?? fallbackX}
-        labelY={routed?.labelY ?? fallbackY}
-        label={data?.label}
-        markerEnd={`url(#${markerId})`}
-        className="archify-edge"
-        data-state={state}
-        data-dimmed={dimmed ? "true" : undefined}
-      />
-      {showDot && (
-        <circle r="4" className="archify-edge-dot" data-dimmed={dimmed ? "true" : undefined}>
-          <animateMotion dur="2s" repeatCount="indefinite" path={path} />
-        </circle>
-      )}
+      <g className="archify-edge-group" data-dimmed={dimmed ? "true" : undefined}>
+        <BaseEdge
+          id={id}
+          path={path}
+          markerEnd={`url(#${markerId})`}
+          className="archify-edge"
+          data-state={state}
+        />
+        {showDot && (
+          <circle r="4" className="archify-edge-dot">
+            <animateMotion dur="2s" repeatCount="indefinite" path={path} />
+          </circle>
+        )}
+        {/* The label comes last, so it paints over the dot. */}
+        {data?.label && (
+          <EdgeText
+            x={routed?.labelX ?? fallbackX}
+            y={routed?.labelY ?? fallbackY}
+            label={data.label}
+          />
+        )}
+      </g>
     </>
   );
 };

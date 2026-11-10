@@ -10,7 +10,7 @@ export default defineConfig({
   oxc: { jsx: { runtime: "automatic", development: false } },
   build: {
     lib: {
-      entry: "src/diagram/index.ts",
+      entry: "src/diagram/entry.ts",
       formats: ["es"],
       fileName: "index",
       cssFileName: "styles",

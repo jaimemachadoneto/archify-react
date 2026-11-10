@@ -18,5 +18,5 @@
     "types": ["vite/client"]
   },
   "include": ["src/diagram"],
-  "exclude": ["src/diagram/**/*.test.ts", "src/diagram/**/*.test.tsx"]
+  "exclude": ["src/diagram/**/*.test.ts", "src/diagram/**/*.test.tsx", "src/diagram/entry.ts"]
 }

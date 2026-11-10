@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FC } from "react";
 import { Background, Controls, Position, ReactFlow } from "@xyflow/react";
-import "@xyflow/react/dist/base.css";
 import { layoutDiagram, type LayoutResult } from "./layout";
 import type { DiagramSpec } from "./spec";
 import { reach } from "./reach";
@@ -264,7 +263,7 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
         fitView
       >
         <Controls showInteractive={false} position="top-right" />
-        <Background color="var(--input)" gap={20} />
+        <Background color="var(--archify-input)" gap={20} />
       </ReactFlow>
     </div>
   );

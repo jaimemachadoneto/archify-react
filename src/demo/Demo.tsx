@@ -1,4 +1,5 @@
 import { useState, type FC } from "react";
+import { Card } from "@/components/ui/card";
 import WorkflowDiagram from "@/diagram/WorkflowDiagram";
 import type { DiagramSpec } from "@/diagram/spec";
 import { useMediaQuery } from "@/diagram/useMediaQuery";
@@ -194,7 +195,7 @@ const demos: DemoItem[] = [
   {
     title: "Decision trace",
     text: "The path of one request. A dashed step did not run, and a red step failed.",
-    height: 300,
+    height: 220,
     narrowHeight: 760,
     turnsOnNarrow: true,
     spec: traceSpec,
@@ -202,7 +203,7 @@ const demos: DemoItem[] = [
   {
     title: "Approval with lanes",
     text: "Each lane is one role. The request moves from one lane to the next.",
-    height: 400,
+    height: 260,
     narrowHeight: 560,
     turnsOnNarrow: true,
     spec: approvalSpec,
@@ -244,11 +245,7 @@ const DemoDiagram: FC<DemoItem & { narrow: boolean }> = ({
         height={height}
         ariaLabel={title}
       />
-      <div
-        data-selection
-        aria-live="polite"
-        className="min-h-16 rounded-md border border-border bg-card p-3 text-card-foreground"
-      >
+      <Card data-selection aria-live="polite" className="min-h-16 p-3">
         {selected ? (
           <>
             <p className="text-sm font-semibold">{selected.label}</p>
@@ -259,7 +256,7 @@ const DemoDiagram: FC<DemoItem & { narrow: boolean }> = ({
         ) : (
           <p className="text-sm text-muted-foreground">Select a step to read its summary.</p>
         )}
-      </div>
+      </Card>
     </section>
   );
 };

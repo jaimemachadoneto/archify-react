@@ -97,6 +97,24 @@ describe("packed package", () => {
     expect(exportsField["./styles.css"]).toBe("./dist/styles.css");
   });
 
+  it("imports no CSS file from the JavaScript or the declarations", () => {
+    const files = tarballEntries
+      .map((entry) => entry.replace(/^package\//, ""))
+      .filter((file) => file === "dist/index.js" || file.endsWith(".d.ts"));
+    expect(files.length).toBeGreaterThan(1);
+    for (const file of files) {
+      expect(readPacked(file), file).not.toMatch(/["'][^"']*\.css["']/);
+    }
+  });
+
+  it("puts the diagram rules and the React Flow base rules in dist/styles.css", () => {
+    const css = readPacked("dist/styles.css");
+    expect(css).toContain(".archify-node");
+    // The diagram styles never name this class, so it comes from the React Flow base rules.
+    expect(css).toContain(".react-flow__container");
+    expect(css).not.toMatch(/@import/);
+  });
+
   it("declares the public names", () => {
     for (const name of [
       "WorkflowDiagram",

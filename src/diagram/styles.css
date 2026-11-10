@@ -1,24 +1,37 @@
-/* Styles of the diagram. Plain CSS: a host app does not scan this package with
-   Tailwind. Each colour, the radius and the fonts come from the variables of
-   the shared design (tokens.css), so the diagram follows the light and the dark
-   mode of the host. The host must define these variables.
+@import "@xyflow/react/dist/base.css";
 
-   Pairs of text and background (contrast of 4.5:1 or more in both modes):
-   card-foreground on card, muted-foreground on background, on muted and on
-   card, foreground on accent, destructive on card. */
+/* The rules read only the --archify-* variables. Each reads a host variable and has a fallback. */
+
+.archify-diagram,
+.archify-alert {
+  --archify-fg: var(--foreground, CanvasText);
+  --archify-bg: var(--background, Canvas);
+  --archify-card: var(--card, Canvas);
+  --archify-card-fg: var(--card-foreground, CanvasText);
+  --archify-border: var(--border, GrayText);
+  --archify-muted: var(--muted, Canvas);
+  --archify-muted-fg: var(--muted-foreground, GrayText);
+  --archify-accent: var(--accent, Canvas);
+  --archify-accent-fg: var(--accent-foreground, CanvasText);
+  --archify-danger: var(--destructive, LinkText);
+  --archify-ring: var(--ring, Highlight);
+  --archify-input: var(--input, GrayText);
+  --archify-radius: var(--radius, 6px);
+  --archify-font: var(--font-sans, system-ui, sans-serif);
+}
 
 .archify-diagram {
   /* Variables that React Flow reads. Its defaults are fixed colour values. */
-  --xy-edge-stroke: var(--foreground);
+  --xy-edge-stroke: var(--archify-fg);
   --xy-edge-stroke-width: 1.5;
-  --xy-background-color: var(--background);
-  --xy-attribution-background-color: var(--card);
-  --xy-handle-background-color: var(--foreground);
+  --xy-background-color: var(--archify-bg);
+  --xy-attribution-background-color: var(--archify-card);
+  --xy-handle-background-color: var(--archify-fg);
 
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+  border: 1px solid var(--archify-border);
+  border-radius: var(--archify-radius);
+  color: var(--archify-fg);
+  font-family: var(--archify-font);
   overflow: hidden;
 }
 
@@ -34,10 +47,10 @@
   box-sizing: border-box;
   margin: 0;
   padding: 4px 6px;
-  border: 1px solid var(--muted-foreground);
-  border-radius: var(--radius);
-  background: var(--card);
-  color: var(--card-foreground);
+  border: 1px solid var(--archify-muted-fg);
+  border-radius: var(--archify-radius);
+  background: var(--archify-card);
+  color: var(--archify-card-fg);
   font: inherit;
   font-size: 12px;
   font-weight: 500;
@@ -53,23 +66,23 @@
 }
 
 .archify-node:hover {
-  border-color: var(--foreground);
-  background: var(--accent);
-  color: var(--accent-foreground);
+  border-color: var(--archify-fg);
+  background: var(--archify-accent);
+  color: var(--archify-accent-fg);
 }
 
 .archify-node--selected {
-  border-color: var(--foreground);
-  background: var(--accent);
-  color: var(--accent-foreground);
+  border-color: var(--archify-fg);
+  background: var(--archify-accent);
+  color: var(--archify-accent-fg);
   /* A second line inside the border. It adds no size, so the layout stays the same. */
-  box-shadow: inset 0 0 0 1px var(--foreground);
+  box-shadow: inset 0 0 0 1px var(--archify-fg);
   font-weight: 700;
 }
 
 /* The focus ring is the only use of the signal colour on a node. */
 .archify-node:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--archify-ring);
   outline-offset: 2px;
 }
 
@@ -127,38 +140,38 @@
 .archify-node[data-state="skipped"] {
   border-style: dashed;
   background: transparent;
-  color: var(--muted-foreground);
+  color: var(--archify-muted-fg);
   font-weight: 400;
 }
 
 .archify-node[data-state="skipped"]:hover,
 .archify-node--selected[data-state="skipped"] {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--archify-accent);
+  color: var(--archify-accent-fg);
 }
 
 /* A selected skipped node keeps the dashed border, and it is bold with a ring: not a colour only. */
 .archify-node--selected[data-state="skipped"] {
-  border-color: var(--foreground);
-  box-shadow: inset 0 0 0 1px var(--foreground);
+  border-color: var(--archify-fg);
+  box-shadow: inset 0 0 0 1px var(--archify-fg);
   font-weight: 700;
 }
 
 .archify-node[data-state="failed"] {
-  border-color: var(--destructive);
-  box-shadow: inset 0 0 0 1px var(--destructive);
+  border-color: var(--archify-danger);
+  box-shadow: inset 0 0 0 1px var(--archify-danger);
 }
 
 /* A selected failed node keeps the destructive border and adds a second ring in the text colour. */
 .archify-node--selected[data-state="failed"] {
-  border-color: var(--destructive);
+  border-color: var(--archify-danger);
   box-shadow:
-    inset 0 0 0 1px var(--destructive),
-    inset 0 0 0 3px var(--foreground);
+    inset 0 0 0 1px var(--archify-danger),
+    inset 0 0 0 3px var(--archify-fg);
 }
 
 .archify-node[data-state="failed"] .archify-node__note {
-  color: var(--destructive);
+  color: var(--archify-danger);
   font-weight: 600;
 }
 
@@ -173,9 +186,9 @@
 .archify-lane {
   position: relative;
   box-sizing: border-box;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--muted);
+  border: 1px solid var(--archify-border);
+  border-radius: var(--archify-radius);
+  background: var(--archify-muted);
 }
 
 /* The label sits above the lane box, so it never covers a node. */
@@ -184,7 +197,7 @@
   bottom: 100%;
   left: 0;
   padding-bottom: 2px;
-  color: var(--muted-foreground);
+  color: var(--archify-muted-fg);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -196,53 +209,53 @@
 /* Edges. The extra class gives these rules more weight than the React Flow defaults, in any load order. */
 
 .archify-diagram .archify-edge {
-  stroke: var(--foreground);
+  stroke: var(--archify-fg);
   stroke-width: 1.5;
   transition: opacity 150ms ease;
 }
 
 .archify-diagram .archify-edge[data-state="skipped"] {
-  stroke: var(--muted-foreground);
+  stroke: var(--archify-muted-fg);
   stroke-width: 1.25;
   stroke-dasharray: 5 4;
 }
 
 .archify-diagram .archify-edge[data-state="failed"] {
-  stroke: var(--destructive);
+  stroke: var(--archify-danger);
   stroke-width: 2;
 }
 
 /* The dot is hollow and uses neutral tokens: the signal colour is for the focus ring only. */
 .archify-diagram .archify-edge-dot {
-  fill: var(--card);
-  stroke: var(--foreground);
+  fill: var(--archify-card);
+  stroke: var(--archify-fg);
   stroke-width: 1.5;
   transition: opacity 150ms ease;
 }
 
 .archify-diagram .react-flow__edge-text {
-  fill: var(--card-foreground);
-  font-family: var(--font-sans);
+  fill: var(--archify-card-fg);
+  font-family: var(--archify-font);
   font-size: 11px;
   font-weight: 500;
 }
 
 .archify-diagram .react-flow__edge-textbg {
-  fill: var(--card);
-  stroke: var(--border);
+  fill: var(--archify-card);
+  stroke: var(--archify-border);
 }
 
 /* Dimming: a node, an edge or a dot that is not on the highlighted path. */
 
 .archify-diagram [data-dimmed] {
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 /* A skipped node has muted text already. Opacity would make it unreadable (under 3:1),
    so only its border fades. */
 .archify-diagram .archify-node[data-state="skipped"][data-dimmed] {
   opacity: 1;
-  border-color: var(--border);
+  border-color: var(--archify-border);
 }
 
 /* The selected node stays easy to read, also when it is not on the path. */
@@ -258,17 +271,17 @@
 
 .archify-diagram .react-flow__controls {
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--card);
+  border: 1px solid var(--archify-border);
+  border-radius: var(--archify-radius);
+  background: var(--archify-card);
 }
 
 .archify-diagram .react-flow__controls-button {
   box-sizing: border-box;
   border: 0;
-  border-bottom: 1px solid var(--border);
-  background: var(--card);
-  color: var(--card-foreground);
+  border-bottom: 1px solid var(--archify-border);
+  background: var(--archify-card);
+  color: var(--archify-card-fg);
   cursor: pointer;
 }
 
@@ -277,34 +290,34 @@
 }
 
 .archify-diagram .react-flow__controls-button:hover {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--archify-accent);
+  color: var(--archify-accent-fg);
 }
 
 .archify-diagram .react-flow__controls-button:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--archify-ring);
   outline-offset: -2px;
 }
 
 .archify-diagram .react-flow__controls-button:disabled {
-  color: var(--muted-foreground);
+  color: var(--archify-muted-fg);
   cursor: default;
 }
 
 /* The licence of React Flow requires the attribution. It stays, small and quiet. */
 .archify-diagram .react-flow__attribution {
   margin: 0;
-  border-top-left-radius: var(--radius);
-  background: var(--card);
-  font-family: var(--font-sans);
+  border-top-left-radius: var(--archify-radius);
+  background: var(--archify-card);
+  font-family: var(--archify-font);
 }
 
 .archify-diagram .react-flow__attribution a {
-  color: var(--muted-foreground);
+  color: var(--archify-muted-fg);
 }
 
 .archify-diagram .react-flow__attribution a:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--archify-ring);
 }
 
 /* Errors */
@@ -314,11 +327,11 @@
   height: 100%;
   margin: 0;
   padding: 12px 16px;
-  border: 1px solid var(--destructive);
-  border-radius: var(--radius);
-  background: var(--card);
-  color: var(--destructive);
-  font-family: var(--font-sans);
+  border: 1px solid var(--archify-danger);
+  border-radius: var(--archify-radius);
+  background: var(--archify-card);
+  color: var(--archify-danger);
+  font-family: var(--archify-font);
   font-size: 14px;
   overflow: auto;
 }
@@ -343,13 +356,13 @@
 
 /* The arrowhead takes the colour of its edge. */
 .archify-diagram .archify-arrow path {
-  fill: var(--foreground);
+  fill: var(--archify-fg);
 }
 
 .archify-diagram .archify-arrow[data-state="skipped"] path {
-  fill: var(--muted-foreground);
+  fill: var(--archify-muted-fg);
 }
 
 .archify-diagram .archify-arrow[data-state="failed"] path {
-  fill: var(--destructive);
+  fill: var(--archify-danger);
 }

@@ -3,3 +3,10 @@ dist
 dist-demo
 test-results
 playwright-report
+.devenv/
+.direnv/
+.envrc
+devenv.local.nix
+devenv.stacks.local.nix
+.local/
+.superpowers/

@@ -126,7 +126,7 @@ test.describe("the demo page", () => {
       await openDemo(page);
       const node = nodesOf(page, title).first();
       // The mouse events go to the window, so the node must be inside it before the drag.
-      await node.scrollIntoViewIfNeeded();
+      await node.evaluate((el) => el.scrollIntoView({ block: "center" }));
       const before = await node.boundingBox();
       expect(before).not.toBeNull();
       const x = before!.x + before!.width / 2;
@@ -168,7 +168,12 @@ test.describe("the demo page", () => {
     // The hover must reach the button through the React Flow node wrapper.
     await nodesOf(page, "Decision trace").filter({ hasText: "Check cache" }).hover();
     await expect(scope.locator("button.archify-node[data-dimmed]").first()).toBeVisible();
-    await expect(scope.locator("path.archify-edge[data-dimmed]").first()).toBeAttached();
+    await expect(
+      scope.locator(".archify-edge-group[data-dimmed] path.archify-edge").first(),
+    ).toBeAttached();
+    await expect(
+      scope.locator('button.archify-node[data-dimmed]:not([data-state="skipped"])').first(),
+    ).toHaveCSS("opacity", "0.6");
     // The hovered node and its own path stay clear.
     await expect(
       nodesOf(page, "Decision trace").filter({ hasText: "Check cache" }),

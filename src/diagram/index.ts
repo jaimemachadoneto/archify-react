@@ -1,6 +1,4 @@
 // The only public entry of the library. Keep this list small: each name is a promise to the consumer.
-import "./styles.css";
-
 export { default as WorkflowDiagram } from "./WorkflowDiagram";
 export type { WorkflowDiagramProps } from "./WorkflowDiagram";
 export type {

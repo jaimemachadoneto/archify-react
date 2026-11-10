@@ -58,7 +58,7 @@ const Node: FC<NodeProps<DiagramFlowNode>> = ({
         onBlur={() => onDeactivate(id)}
       >
         <span className="archify-node__label">{label}</span>
-        {kind !== "step" && <span className="archify-sr-only">, {kind}</span>}
+        {kind !== "step" && <span className="archify-sr-only">({kind})</span>}
         {/* A caption says the state in words, so a colour is never the only sign. */}
         {state === "skipped" && <span className="archify-node__note">not used</span>}
         {state === "failed" && <span className="archify-node__note">failed</span>}
