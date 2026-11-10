@@ -24,6 +24,9 @@ export interface WorkflowDiagramProps {
 const nodeTypes = { step: Node, lane: Lane };
 const edgeTypes = { flow: FlowEdgeView };
 const MIN_ZOOM = 0.7;
+// Lanes and steps share one id space in React Flow. Two prefixes keep a spec id such as "lane:ops" from a clash.
+const LANE_PREFIX = "lane:";
+const STEP_PREFIX = "step:";
 
 // Only these fields change the layout. A change to another field redraws without ELK.
 function layoutKeyOf(spec: DiagramSpec): string {
@@ -117,7 +120,7 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
     if (!layout) return [];
     const laneLabels = new Map((valid ? (spec.lanes ?? []) : []).map((l) => [l.id, l.label]));
     return layout.lanes.map((lane) => ({
-      id: `lane:${lane.id}`,
+      id: LANE_PREFIX + lane.id,
       type: "lane",
       data: { label: laneLabels.get(lane.id) ?? lane.id },
       position: { x: lane.x, y: lane.y },
@@ -139,9 +142,10 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
     return layout.nodes.map((placed) => {
       const node = specNodes.get(placed.id) ?? placed;
       return {
-        id: placed.id,
+        id: STEP_PREFIX + placed.id,
         type: "step",
         data: {
+          specId: placed.id,
           label: node.label,
           kind: node.kind ?? "step",
           state: node.state,
@@ -192,8 +196,8 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
       return {
         id: placed.id,
         type: "flow",
-        source: placed.source,
-        target: placed.target,
+        source: STEP_PREFIX + placed.source,
+        target: STEP_PREFIX + placed.target,
         focusable: false,
         data: {
           label: edge.label,

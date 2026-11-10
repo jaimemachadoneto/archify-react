@@ -175,6 +175,27 @@ describe("WorkflowDiagram", () => {
     expect(await screen.findByRole("button", { name: /Alpha/ })).toBeInTheDocument();
   });
 
+  it("draws a lane and a node whose id looks like the id of the lane", async () => {
+    const clash: DiagramSpec = {
+      version: 1,
+      lanes: [{ id: "ops", label: "Operations lane" }],
+      nodes: [
+        { id: "lane:ops", label: "Clash", lane: "ops" },
+        { id: "beta", label: "Beta", lane: "ops" },
+      ],
+      edges: [{ id: "e1", source: "lane:ops", target: "beta" }],
+    };
+    const onSelect = vi.fn();
+    const { container } = draw(clash, { onSelect });
+    const button = await screen.findByRole("button", { name: /Clash/ });
+    expect(container.querySelectorAll(".archify-lane")).toHaveLength(1);
+    expect(screen.getByText("Operations lane")).toBeInTheDocument();
+    expect(container.querySelector(".archify-edge")).not.toBeNull();
+    // The host sees the id of the spec, not the id inside React Flow.
+    fireEvent.click(button);
+    expect(onSelect).toHaveBeenCalledWith("lane:ops");
+  });
+
   it("shows the problems of an invalid spec in an alert and does not lay it out", () => {
     draw(invalidSpec);
     const alert = screen.getByRole("alert");

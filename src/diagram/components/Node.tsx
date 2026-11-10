@@ -3,6 +3,8 @@ import { Handle, Position, type Node as FlowNode, type NodeProps } from "@xyflow
 import type { DiagramNode } from "../spec";
 
 export type DiagramNodeData = {
+  // The id in the spec. The id of the React Flow node has a prefix.
+  specId: string;
   label: string;
   kind: NonNullable<DiagramNode["kind"]>;
   state?: DiagramNode["state"];
@@ -19,12 +21,11 @@ export type DiagramFlowNode = FlowNode<DiagramNodeData, "step">;
 // The button is the only click target, so one click calls onSelect once.
 // A native button also gives the Enter and the Space keys.
 const Node: FC<NodeProps<DiagramFlowNode>> = ({
-  id,
   data,
   sourcePosition = Position.Right,
   targetPosition = Position.Left,
 }) => {
-  const { label, kind, state, selected, onSelect, dimmed, onActivate, onDeactivate } = data;
+  const { specId, label, kind, state, selected, onSelect, dimmed, onActivate, onDeactivate } = data;
 
   // "nopan" keeps a mouse drag on a node from panning the diagram: React Flow adds it only to a draggable node.
   const classes = ["archify-node", "nopan"];
@@ -51,11 +52,11 @@ const Node: FC<NodeProps<DiagramFlowNode>> = ({
         // The attribute is absent, not "false", when the node is not dimmed.
         data-dimmed={dimmed ? "true" : undefined}
         style={{ width: "100%", height: "100%" }}
-        onClick={() => onSelect(id)}
-        onPointerEnter={() => onActivate(id)}
-        onPointerLeave={() => onDeactivate(id)}
-        onFocus={() => onActivate(id)}
-        onBlur={() => onDeactivate(id)}
+        onClick={() => onSelect(specId)}
+        onPointerEnter={() => onActivate(specId)}
+        onPointerLeave={() => onDeactivate(specId)}
+        onFocus={() => onActivate(specId)}
+        onBlur={() => onDeactivate(specId)}
       >
         <span className="archify-node__label">{label}</span>
         {kind !== "step" && <span className="archify-sr-only">({kind})</span>}
