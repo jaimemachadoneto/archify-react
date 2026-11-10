@@ -1,0 +1,8 @@
+# Keep the actions current. pages.yaml pins the one third-party action to a
+# commit, so an update arrives as a pull request.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
