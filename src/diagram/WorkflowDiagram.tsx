@@ -24,7 +24,7 @@ export interface WorkflowDiagramProps {
 const nodeTypes = { step: Node, lane: Lane };
 const edgeTypes = { flow: FlowEdgeView };
 const MIN_ZOOM = 0.7;
-// Lanes and steps share one id space in React Flow. Two prefixes keep a spec id such as "lane:ops" from a clash.
+// Lanes and steps share one ID space in React Flow. A prefix on each type stops a spec ID such as "lane:ops" from matching a lane ID.
 const LANE_PREFIX = "lane:";
 const STEP_PREFIX = "step:";
 

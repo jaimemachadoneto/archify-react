@@ -108,7 +108,7 @@ A lane has an `id` and a `label`. The lane draws a box around its nodes and a la
 | `kind`     | `"step"`, `"decision"`, `"start"` or `"end"` | `"step"` | The shape of the node.                                                     |
 | `state`    | `"used"`, `"skipped"` or `"failed"`          | `"used"` | The state of the flow at this node.                                        |
 | `lane`     | `string`                                     | none     | The ID of the lane of the node.                                            |
-| `position` | `{ x: number, y: number }`                   | none     | A fixed position in pixels.                                                |
+| `position` | `{ x: number, y: number }`                   | none     | A fixed position in pixels. Each value is between -1000000 and 1000000.    |
 
 A `start` node and an `end` node draw as a pill. A `decision` node draws with a small diamond before its label.
 
@@ -198,6 +198,7 @@ The validation reports these limits as problems:
 - 500 nodes.
 - 2000 edges.
 - A label of at most 200 characters.
+- A value of `position` between -1000000 and 1000000.
 
 The layout runs on the main thread. A larger spec can make the page slow to answer.
 
@@ -255,6 +256,7 @@ The stylesheet is plain CSS. It is not in a CSS layer. It imports the base rules
 - The diagram needs a parent with a width.
 - The React Flow attribution stays visible.
 - A long label stops after two lines, or one line with a caption. The `title` of the node shows all of it.
+- The `data-id` of a node element is `step:` and the ID of the node. A test must not select a node by the ID alone.
 
 ## Develop
 
@@ -270,7 +272,7 @@ These commands work in the project shell:
 
 `pnpm build:pages` writes the demo for the project site, with `/archify-react/` as the base. The workflow `.github/workflows/pages.yaml` publishes it.
 
-The demo page holds three examples and a playground. The playground changes the direction, the highlight, the spec and the look. Run `pnpm dev`. Then open `http://localhost:5173`. The demo reads the same variables as a host app.
+The demo page holds three examples and a playground. The playground has controls for the direction, the highlight, the spec and the look. Run `pnpm dev`. Then open `http://localhost:5173`. The demo reads the same variables as a host app.
 
 ## Licence
 

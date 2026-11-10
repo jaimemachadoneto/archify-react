@@ -3,7 +3,7 @@ import { Handle, Position, type Node as FlowNode, type NodeProps } from "@xyflow
 import type { DiagramNode } from "../spec";
 
 export type DiagramNodeData = {
-  // The id in the spec. The id of the React Flow node has a prefix.
+  // The ID in the spec. The ID of the React Flow node has a prefix.
   specId: string;
   label: string;
   kind: NonNullable<DiagramNode["kind"]>;

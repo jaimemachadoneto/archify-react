@@ -89,9 +89,10 @@ describe("reduced motion", () => {
     const motion = stubLiveMotionQuery(false);
     const container = await draw(specWith({ animated: true }));
     expect(container.querySelectorAll("animateMotion")).toHaveLength(1);
+    // The edge subscribes in an effect, so the change must come after the subscription.
+    await waitFor(() => expect(motion.listeners.size).toBeGreaterThan(0));
     act(() => motion.change(true));
-    // This test failed about 1 run in 10 when it read the DOM at once, so it waits for the change.
-    await waitFor(() => expect(container.querySelectorAll("animateMotion")).toHaveLength(0));
+    expect(container.querySelectorAll("animateMotion")).toHaveLength(0);
   });
 
   it("removes the media query listener when the diagram unmounts", async () => {
@@ -152,7 +153,7 @@ describe("animated edge", () => {
       expect(view.container.querySelector(".archify-edge")?.getAttribute("d")).not.toBe(pathBefore),
     );
 
-    // A running SMIL animation keeps its old path when the attribute changes, so the circle must be new.
+    // A running SMIL animation does not read a new path, so the circle must be new.
     expect(view.container.querySelector(".archify-edge-dot")).not.toBe(dotBefore);
   });
 
