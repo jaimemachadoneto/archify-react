@@ -7,6 +7,10 @@ export type DiagramNodeData = {
   state?: DiagramNode["state"];
   selected: boolean;
   onSelect: (id: string) => void;
+  // True when a path is highlighted and this node is not on it.
+  dimmed: boolean;
+  onActivate: (id: string) => void;
+  onDeactivate: (id: string) => void;
 };
 
 export type DiagramFlowNode = FlowNode<DiagramNodeData, "step">;
@@ -19,7 +23,7 @@ const Node: FC<NodeProps<DiagramFlowNode>> = ({
   sourcePosition = Position.Right,
   targetPosition = Position.Left,
 }) => {
-  const { label, state, selected, onSelect } = data;
+  const { label, state, selected, onSelect, dimmed, onActivate, onDeactivate } = data;
 
   const classes = ["archify-node"];
   if (selected) classes.push("archify-node--selected");
@@ -40,8 +44,15 @@ const Node: FC<NodeProps<DiagramFlowNode>> = ({
         className={classes.join(" ")}
         data-state={state ?? "used"}
         aria-pressed={selected}
-        style={{ width: "100%", height: "100%" }}
+        // The attribute is absent, not "false", when the node is not dimmed.
+        data-dimmed={dimmed ? "true" : undefined}
+        // React Flow sets pointer-events none on a node that is not selectable. The button must stay a target.
+        style={{ width: "100%", height: "100%", pointerEvents: "auto" }}
         onClick={() => onSelect(id)}
+        onPointerEnter={() => onActivate(id)}
+        onPointerLeave={() => onDeactivate(id)}
+        onFocus={() => onActivate(id)}
+        onBlur={() => onDeactivate(id)}
       >
         <span className="archify-node__label">{label}</span>
         {state === "skipped" && <span className="archify-node__note">not used</span>}

@@ -8,6 +8,8 @@ export type DiagramEdgeData = {
   state?: DiagramEdge["state"];
   animated: boolean;
   sections: EdgeSection[];
+  // True when a path is highlighted and this edge is not on it.
+  dimmed: boolean;
 };
 
 export type DiagramFlowEdge = FlowEdge<DiagramEdgeData, "flow">;
@@ -65,6 +67,7 @@ const FlowEdgeView: FC<EdgeProps<DiagramFlowEdge>> = ({
   const reducedMotion = useReducedMotion();
   // Only a used edge shows the dot: a skipped or a failed edge carries no flow.
   const state = data?.state ?? "used";
+  const dimmed = data?.dimmed === true;
   const showDot = data?.animated === true && state === "used" && !reducedMotion;
 
   return (
@@ -77,9 +80,10 @@ const FlowEdgeView: FC<EdgeProps<DiagramFlowEdge>> = ({
         label={data?.label}
         className="archify-edge"
         data-state={state}
+        data-dimmed={dimmed ? "true" : undefined}
       />
       {showDot && (
-        <circle r="4" className="archify-edge-dot">
+        <circle r="4" className="archify-edge-dot" data-dimmed={dimmed ? "true" : undefined}>
           <animateMotion dur="2s" repeatCount="indefinite" path={path} />
         </circle>
       )}
