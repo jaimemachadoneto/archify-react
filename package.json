@@ -2,6 +2,8 @@
   "name": "archify-react",
   "private": true,
   "version": "0.1.0",
+  "description": "Draw a workflow diagram in a React app.",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
