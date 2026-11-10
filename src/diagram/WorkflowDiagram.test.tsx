@@ -357,6 +357,54 @@ describe("WorkflowDiagram", () => {
     });
   });
 
+  describe("a new spec object", () => {
+    it("clears the active node, also when the new spec keeps the same node ids", async () => {
+      const view = draw(forkSpec);
+      await userEvent.hover(await screen.findByRole("button", { name: /Node D/ }));
+      expect(view.container.querySelector("[data-dimmed]")).not.toBeNull();
+      view.rerender(
+        <WorkflowDiagram
+          spec={{ ...forkSpec }}
+          selectedId={null}
+          onSelect={() => {}}
+          height={400}
+          ariaLabel="Decision trace"
+        />,
+      );
+      await screen.findByRole("button", { name: /Node D/ });
+      expect(view.container.querySelector("[data-dimmed]")).toBeNull();
+    });
+  });
+
+  describe("the failed state", () => {
+    it("says in words that a step failed, not with a colour only", async () => {
+      draw({
+        ...baseSpec,
+        nodes: [
+          { id: "alpha", label: "Alpha", state: "used" },
+          { id: "beta", label: "Beta", state: "failed" },
+        ],
+      });
+      expect(await screen.findByRole("button", { name: /Beta.*failed/ })).toHaveAttribute(
+        "data-state",
+        "failed",
+      );
+      expect(screen.getByRole("button", { name: /Alpha/ })).not.toHaveTextContent("failed");
+    });
+  });
+
+  it("keeps the node wrapper a pointer target, so that hover and click reach the button", async () => {
+    const { container } = draw(baseSpec);
+    const button = await screen.findByRole("button", { name: /Alpha/ });
+    expect(container.querySelector(".react-flow__node-step")).toHaveStyle({ pointerEvents: "all" });
+    expect(button.style.pointerEvents).toBe("");
+  });
+
+  it("marks the node button nopan, so that a drag on a node does not pan the diagram", async () => {
+    draw(baseSpec);
+    expect(await screen.findByRole("button", { name: /Alpha/ })).toHaveClass("nopan");
+  });
+
   it("leaves the nodes unselectable by React Flow, because the app owns selection", async () => {
     const { container } = draw(baseSpec);
     await screen.findByRole("button", { name: /Beta/ });

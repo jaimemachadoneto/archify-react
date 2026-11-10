@@ -22,3 +22,9 @@ class MockDOMMatrixReadOnly {
 }
 
 global.DOMMatrixReadOnly = MockDOMMatrixReadOnly as unknown as typeof DOMMatrixReadOnly;
+
+// React Flow measures the text of an edge label with getBBox, which jsdom lacks.
+Object.defineProperty(SVGElement.prototype, "getBBox", {
+  configurable: true,
+  value: () => ({ x: 0, y: 0, width: 0, height: 0 }),
+});

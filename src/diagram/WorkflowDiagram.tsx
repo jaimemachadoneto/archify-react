@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FC } from "react";
 import { Background, Controls, Position, ReactFlow } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
+import "@xyflow/react/dist/base.css";
 import { layoutDiagram, type LayoutResult } from "./layout";
 import type { DiagramSpec } from "./spec";
 import { reach } from "./reach";
@@ -13,6 +13,7 @@ export interface WorkflowDiagramProps {
   // The component runs the layout again when this object changes, so keep it stable (for example with useMemo).
   spec: DiagramSpec;
   selectedId: string | null;
+  // Pass a stable function (for example a state setter), or the component rebuilds the step nodes on each render.
   onSelect: (id: string) => void;
   height: number;
   ariaLabel: string;
@@ -61,6 +62,13 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
 
   // One source of truth for the active node: the node under the pointer or with focus.
   const [activeId, setActiveId] = useState<string | null>(null);
+  // A new spec can unmount the node that was active, and then no leave event comes.
+  // React allows this reset during the render, and it avoids a frame with a stale dimming.
+  const [activeSpec, setActiveSpec] = useState(spec);
+  if (activeSpec !== spec) {
+    setActiveSpec(spec);
+    setActiveId(null);
+  }
   const onActivate = useCallback((id: string) => setActiveId(id), []);
   // A leave or a blur from an older node must not clear a newer active node.
   const onDeactivate = useCallback(
@@ -115,6 +123,8 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
       height: node.height,
       sourcePosition,
       targetPosition,
+      // React Flow sets pointer-events none on a node that is not selectable. The button must stay a target.
+      style: { pointerEvents: "all" },
       // React Flow measures the handles in a browser. These boxes keep the edges
       // drawn where no layout engine exists, such as in a test.
       handles: [
@@ -201,12 +211,14 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
         nodesFocusable={false}
         edgesFocusable={false}
         elementsSelectable={false}
+        className="archify-diagram"
+        minZoom={0.25}
         zoomOnScroll={false}
         preventScrolling={false}
         fitView
       >
-        <Controls showInteractive={false} />
-        <Background />
+        <Controls showInteractive={false} position="top-right" />
+        <Background color="var(--input)" gap={20} />
       </ReactFlow>
     </div>
   );

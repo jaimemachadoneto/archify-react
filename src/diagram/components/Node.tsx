@@ -25,7 +25,8 @@ const Node: FC<NodeProps<DiagramFlowNode>> = ({
 }) => {
   const { label, state, selected, onSelect, dimmed, onActivate, onDeactivate } = data;
 
-  const classes = ["archify-node"];
+  // "nopan" keeps a mouse drag on a node from panning the diagram: React Flow adds it only to a draggable node.
+  const classes = ["archify-node", "nopan"];
   if (selected) classes.push("archify-node--selected");
   if (state) classes.push(`archify-node--${state}`);
 
@@ -46,8 +47,7 @@ const Node: FC<NodeProps<DiagramFlowNode>> = ({
         aria-pressed={selected}
         // The attribute is absent, not "false", when the node is not dimmed.
         data-dimmed={dimmed ? "true" : undefined}
-        // React Flow sets pointer-events none on a node that is not selectable. The button must stay a target.
-        style={{ width: "100%", height: "100%", pointerEvents: "auto" }}
+        style={{ width: "100%", height: "100%" }}
         onClick={() => onSelect(id)}
         onPointerEnter={() => onActivate(id)}
         onPointerLeave={() => onDeactivate(id)}
@@ -55,7 +55,9 @@ const Node: FC<NodeProps<DiagramFlowNode>> = ({
         onBlur={() => onDeactivate(id)}
       >
         <span className="archify-node__label">{label}</span>
+        {/* A caption says the state in words, so a colour is never the only sign. */}
         {state === "skipped" && <span className="archify-node__note">not used</span>}
+        {state === "failed" && <span className="archify-node__note">failed</span>}
       </button>
       <Handle
         type="source"

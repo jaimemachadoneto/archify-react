@@ -88,3 +88,28 @@ describe("animated edge", () => {
     expect(container.querySelectorAll("animateMotion")).toHaveLength(1);
   });
 });
+
+describe("edge arrow and label", () => {
+  it("ends with an arrowhead that takes its colour from the state of the edge", async () => {
+    const container = await draw(specWith({ state: "failed" }));
+    const markerEnd = container.querySelector(".archify-edge")?.getAttribute("marker-end");
+    const id = markerEnd?.match(/^url\(#(.+)\)$/)?.[1];
+    expect(id).toBeTruthy();
+    const marker = container.querySelector(`marker[id="${id}"]`);
+    expect(marker).toHaveClass("archify-arrow");
+    expect(marker).toHaveAttribute("data-state", "failed");
+  });
+
+  it("puts the label in the middle of the edge, not at its end", async () => {
+    const container = await draw(specWith({ label: "yes" }));
+    const path = container.querySelector(".archify-edge")?.getAttribute("d") ?? "";
+    const xs = [...path.matchAll(/[ML] (-?[\d.]+) (-?[\d.]+)/g)].map((m) => Number(m[1]));
+    const label = container.querySelector(".react-flow__edge-text");
+    const x = Number(
+      label?.parentElement?.getAttribute("transform")?.match(/translate\((-?[\d.]+)/)?.[1],
+    );
+    expect(xs.length).toBeGreaterThanOrEqual(2);
+    expect(x).toBeGreaterThan(Math.min(...xs));
+    expect(x).toBeLessThan(Math.max(...xs));
+  });
+});

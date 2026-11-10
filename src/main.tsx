@@ -5,6 +5,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import "./diagram/styles.css";
 
 // The fonts are bundled with the app (Fontsource), so the app makes no
 // request to a font service at run time.

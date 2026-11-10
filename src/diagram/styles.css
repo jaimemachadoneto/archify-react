@@ -1,0 +1,288 @@
+/* Styles of the diagram. Plain CSS: a host app does not scan this package with
+   Tailwind. Each colour, the radius and the fonts come from the variables of
+   the shared design (tokens.css), so the diagram follows the light and the dark
+   mode of the host. The host must define these variables.
+
+   Pairs of text and background (contrast of 4.5:1 or more in both modes):
+   card-foreground on card, muted-foreground on background, on muted and on
+   card, foreground on accent, destructive on card. */
+
+.archify-diagram {
+  /* Variables that React Flow reads. Its defaults are fixed colour values. */
+  --xy-edge-stroke: var(--foreground);
+  --xy-edge-stroke-width: 1.5;
+  --xy-background-color: var(--background);
+  --xy-attribution-background-color: var(--card);
+  --xy-handle-background-color: var(--foreground);
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow: hidden;
+}
+
+/* Nodes */
+
+.archify-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--muted-foreground);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--card-foreground);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    opacity 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.archify-node:hover {
+  border-color: var(--foreground);
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.archify-node--selected {
+  border-color: var(--foreground);
+  background: var(--accent);
+  color: var(--accent-foreground);
+  /* A second line inside the border. It adds no size, so the layout stays the same. */
+  box-shadow: inset 0 0 0 1px var(--foreground);
+  font-weight: 700;
+}
+
+/* The focus ring is the only use of the signal colour on a node. */
+.archify-node:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.archify-node__label {
+  overflow-wrap: anywhere;
+}
+
+.archify-node__note {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.archify-node[data-state="skipped"] {
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
+
+.archify-node[data-state="skipped"]:hover,
+.archify-node--selected[data-state="skipped"] {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.archify-node[data-state="failed"] {
+  border-color: var(--destructive);
+  box-shadow: inset 0 0 0 1px var(--destructive);
+}
+
+.archify-node[data-state="failed"] .archify-node__note {
+  color: var(--destructive);
+  font-weight: 600;
+}
+
+/* On the accent background of a selected node, the caption keeps the text colour. */
+.archify-node--selected[data-state="failed"] .archify-node__note,
+.archify-node[data-state="failed"]:hover .archify-node__note {
+  color: inherit;
+}
+
+/* Lanes */
+
+.archify-lane {
+  position: relative;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--muted);
+}
+
+/* The label sits above the lane box, so it never covers a node. */
+.archify-lane__label {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  padding-bottom: 2px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Edges. The extra class gives these rules more weight than the React Flow defaults, in any load order. */
+
+.archify-diagram .archify-edge {
+  stroke: var(--foreground);
+  stroke-width: 1.5;
+  transition: opacity 150ms ease;
+}
+
+.archify-diagram .archify-edge[data-state="skipped"] {
+  stroke: var(--muted-foreground);
+  stroke-width: 1.25;
+  stroke-dasharray: 5 4;
+}
+
+.archify-diagram .archify-edge[data-state="failed"] {
+  stroke: var(--destructive);
+  stroke-width: 2;
+}
+
+.archify-diagram .archify-edge-dot {
+  fill: var(--primary);
+  transition: opacity 150ms ease;
+}
+
+.archify-diagram .react-flow__edge-text {
+  fill: var(--card-foreground);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.archify-diagram .react-flow__edge-textbg {
+  fill: var(--card);
+  stroke: var(--border);
+}
+
+/* Dimming: a node, an edge or a dot that is not on the highlighted path. */
+
+.archify-diagram [data-dimmed] {
+  opacity: 0.35;
+}
+
+/* The selected node stays easy to read, also when it is not on the path. */
+.archify-diagram .archify-node--selected[data-dimmed] {
+  opacity: 0.8;
+}
+
+/* React Flow parts */
+
+.archify-diagram .react-flow__pane {
+  cursor: default;
+}
+
+.archify-diagram .react-flow__controls {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.archify-diagram .react-flow__controls-button {
+  box-sizing: border-box;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+  cursor: pointer;
+}
+
+.archify-diagram .react-flow__controls-button:last-child {
+  border-bottom: 0;
+}
+
+.archify-diagram .react-flow__controls-button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.archify-diagram .react-flow__controls-button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.archify-diagram .react-flow__controls-button:disabled {
+  color: var(--muted-foreground);
+  cursor: default;
+}
+
+/* The licence of React Flow requires the attribution. It stays, small and quiet. */
+.archify-diagram .react-flow__attribution {
+  margin: 0;
+  border-top-left-radius: var(--radius);
+  background: var(--card);
+  font-family: var(--font-sans);
+}
+
+.archify-diagram .react-flow__attribution a {
+  color: var(--muted-foreground);
+}
+
+.archify-diagram .react-flow__attribution a:focus-visible {
+  outline: 2px solid var(--ring);
+}
+
+/* Errors */
+
+.archify-alert {
+  box-sizing: border-box;
+  height: 100%;
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--destructive);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--destructive);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  overflow: auto;
+}
+
+.archify-alert p {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.archify-alert ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archify-node,
+  .archify-edge,
+  .archify-edge-dot {
+    transition: none;
+  }
+}
+
+/* The arrowhead takes the colour of its edge. */
+.archify-diagram .archify-arrow path {
+  fill: var(--foreground);
+}
+
+.archify-diagram .archify-arrow[data-state="skipped"] path {
+  fill: var(--muted-foreground);
+}
+
+.archify-diagram .archify-arrow[data-state="failed"] path {
+  fill: var(--destructive);
+}
