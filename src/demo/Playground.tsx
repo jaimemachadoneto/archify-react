@@ -7,13 +7,14 @@ type Direction = "RIGHT" | "DOWN";
 type PresetKey = "lanes" | "pinned" | "invalid";
 type Look = "host" | "custom";
 
-// A ticket goes through two lanes and splits at one decision.
+// A ticket goes through three lanes and splits at one decision.
 const lanesSpec: DiagramSpec = {
   version: 1,
   direction: "RIGHT",
   lanes: [
     { id: "customer", label: "Customer" },
     { id: "support", label: "Support" },
+    { id: "archive", label: "Archive" },
   ],
   nodes: [
     { id: "open", label: "Open ticket", kind: "start", lane: "customer" },
@@ -21,7 +22,7 @@ const lanesSpec: DiagramSpec = {
     { id: "known", label: "Known issue?", kind: "decision", lane: "support" },
     { id: "answer", label: "Send answer", lane: "support" },
     { id: "engineer", label: "Ask engineer", lane: "support", state: "failed" },
-    { id: "close", label: "Close ticket", kind: "end", lane: "customer" },
+    { id: "close", label: "Close ticket", kind: "end", lane: "archive" },
   ],
   edges: [
     { id: "e1", source: "open", target: "triage", animated: true },
@@ -72,7 +73,7 @@ const presets: Record<PresetKey, { label: string; spec: DiagramSpec }> = {
 
 const looks: Record<Look, string> = { host: "Host tokens", custom: "Custom palette" };
 
-const HEIGHT: Record<Direction, number> = { RIGHT: 340, DOWN: 560 };
+const HEIGHT: Record<Direction, number> = { RIGHT: 340, DOWN: 720 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);

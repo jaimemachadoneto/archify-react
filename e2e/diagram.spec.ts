@@ -378,7 +378,8 @@ test.describe("at phone width", () => {
         Number(v.style.transform.match(/scale\(([\d.]+)\)/)?.[1]),
       ),
     );
-    expect(zooms).toHaveLength(3);
+    // Three examples and the playground.
+    expect(zooms).toHaveLength(4);
     for (const zoom of zooms) expect(zoom).toBeGreaterThanOrEqual(0.7);
   });
 

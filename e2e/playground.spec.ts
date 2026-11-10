@@ -1,0 +1,136 @@
+import { expect, test, type Locator, type Page } from "@playwright/test";
+
+const diagram = (page: Page): Locator => page.getByRole("group", { name: "Playground diagram" });
+const nodes = (page: Page): Locator => diagram(page).locator("button.archify-node");
+
+// The layout is asynchronous, so a test waits until the diagram shows the steps of the preset.
+async function openPlayground(page: Page): Promise<void> {
+  await page.goto("/");
+  await expect(nodes(page).filter({ hasText: "Send answer" })).toHaveCount(1);
+}
+
+// The size of the box around all steps, as the user sees it.
+async function boundsOfNodes(page: Page): Promise<{ width: number; height: number }> {
+  return nodes(page).evaluateAll((buttons) => {
+    const boxes = buttons.map((button) => button.getBoundingClientRect());
+    return {
+      width: Math.max(...boxes.map((b) => b.right)) - Math.min(...boxes.map((b) => b.left)),
+      height: Math.max(...boxes.map((b) => b.bottom)) - Math.min(...boxes.map((b) => b.top)),
+    };
+  });
+}
+
+test.describe("the playground", () => {
+  test("renders a diagram, the controls and the JSON of the spec", async ({ page }) => {
+    await openPlayground(page);
+    await expect(page.getByRole("heading", { level: 2, name: "Playground" })).toBeVisible();
+    await expect(diagram(page).locator(".archify-lane")).toHaveCount(3);
+    expect(await nodes(page).count()).toBeGreaterThanOrEqual(6);
+    await expect(page.getByRole("radio", { name: "RIGHT" })).toBeChecked();
+    await expect(page.getByRole("checkbox", { name: "Highlight" })).toBeChecked();
+    await expect(page.getByRole("combobox", { name: "Spec preset" })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Look" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Spec JSON" })).toContainText('"version": 1');
+  });
+
+  test("draws the preset taller than wide when the direction is DOWN", async ({ page }) => {
+    await openPlayground(page);
+    const wide = await boundsOfNodes(page);
+    expect(wide.width, "RIGHT is wider than tall").toBeGreaterThan(wide.height);
+    await page.getByRole("radio", { name: "DOWN" }).check();
+    await expect
+      .poll(async () => {
+        const { width, height } = await boundsOfNodes(page);
+        return height > width;
+      })
+      .toBe(true);
+  });
+
+  test("shows the problem list of the diagram for the Invalid spec preset", async ({ page }) => {
+    await openPlayground(page);
+    await page
+      .getByRole("combobox", { name: "Spec preset" })
+      .selectOption({ label: "Invalid spec" });
+    const alert = diagram(page).getByRole("alert");
+    await expect(alert).toContainText("The diagram spec is not valid.");
+    await expect(alert).toContainText("occurs more than once");
+    await expect(alert).toContainText('unknown target node "ship"');
+    // The playground draws no alert of its own.
+    await expect(page.getByRole("alert")).toHaveCount(1);
+  });
+
+  test("keeps the last good diagram when the text is not valid JSON", async ({ page }) => {
+    await openPlayground(page);
+    await page.getByRole("textbox", { name: "Spec JSON" }).fill("{ not json");
+    await expect(page.getByRole("alert")).toContainText("not valid JSON");
+    await expect(nodes(page).filter({ hasText: "Send answer" })).toHaveCount(1);
+  });
+
+  test("dims nothing on hover when Highlight is off", async ({ page }) => {
+    await openPlayground(page);
+    const answer = nodes(page).filter({ hasText: "Send answer" });
+    await answer.hover();
+    await expect(diagram(page).locator("button.archify-node[data-dimmed]").first()).toBeVisible();
+    await page.mouse.move(2, 2);
+    await expect(diagram(page).locator("[data-dimmed]")).toHaveCount(0);
+
+    await page.getByRole("checkbox", { name: "Highlight" }).uncheck();
+    await answer.hover();
+    await expect(answer).toBeVisible();
+    await expect(diagram(page).locator("[data-dimmed]")).toHaveCount(0);
+  });
+
+  test("changes --archify-radius when the look is Custom palette", async ({ page }) => {
+    await openPlayground(page);
+    const radius = () =>
+      diagram(page)
+        .locator(".archify-diagram")
+        .evaluate((el) => getComputedStyle(el).getPropertyValue("--archify-radius").trim());
+    const host = await radius();
+    await page.getByRole("combobox", { name: "Look" }).selectOption({ label: "Custom palette" });
+    await expect.poll(radius).toBe("16px");
+    expect(host).not.toBe("16px");
+    await page.getByRole("combobox", { name: "Look" }).selectOption({ label: "Host tokens" });
+    await expect.poll(radius).toBe(host);
+  });
+
+  test("fits a phone window with no sideways scroll", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await openPlayground(page);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+    const box = await diagram(page).boundingBox();
+    expect(box!.x + box!.width).toBeLessThanOrEqual(375);
+  });
+
+  test("does not overlap two steps in any preset", async ({ page }) => {
+    await openPlayground(page);
+    for (const preset of ["Pinned positions", "Valid with lanes"]) {
+      await page.getByRole("combobox", { name: "Spec preset" }).selectOption({ label: preset });
+      await expect(nodes(page).first()).toBeVisible();
+      for (const direction of ["DOWN", "RIGHT"]) {
+        await page.getByRole("radio", { name: direction }).check();
+        // The group is busy until the layout of the new spec arrives. The old layout stays on screen until then.
+        await expect(diagram(page)).not.toHaveAttribute("aria-busy", "true");
+        const boxes = await nodes(page).evaluateAll((buttons) =>
+          buttons.map((b) => {
+            const r = b.getBoundingClientRect();
+            return { name: b.textContent ?? "", l: r.left, r: r.right, t: r.top, b: r.bottom };
+          }),
+        );
+        expect(boxes.length).toBeGreaterThanOrEqual(4);
+        for (let i = 0; i < boxes.length; i++) {
+          for (let j = i + 1; j < boxes.length; j++) {
+            const a = boxes[i];
+            const c = boxes[j];
+            const apart =
+              a.r <= c.l + 0.5 || c.r <= a.l + 0.5 || a.b <= c.t + 0.5 || c.b <= a.t + 0.5;
+            expect(apart, `${preset} ${direction}: "${a.name}" overlaps "${c.name}"`).toBe(true);
+          }
+        }
+      }
+    }
+  });
+});
