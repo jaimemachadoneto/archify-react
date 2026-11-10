@@ -95,7 +95,25 @@ describe("validateSpec", () => {
       ],
     };
     const problems = validateSpec(spec);
-    expect(problems.length).toBeGreaterThanOrEqual(2);
+    expect(problems.map((p) => p.code)).toEqual([
+      "DUPLICATE_NODE_ID",
+      "EDGE_TARGET_NOT_FOUND",
+      "DUPLICATE_EDGE_ID",
+      "EDGE_TARGET_NOT_FOUND",
+    ]);
+  });
+
+  it("returns an empty list for an empty graph", () => {
+    expect(validateSpec({ version: 1, nodes: [], edges: [] })).toEqual([]);
+  });
+
+  it("returns an empty list for a self-loop", () => {
+    const spec: DiagramSpec = {
+      version: 1,
+      nodes: [{ id: "a", label: "A" }],
+      edges: [{ id: "aa", source: "a", target: "a" }],
+    };
+    expect(validateSpec(spec)).toEqual([]);
   });
 });
 

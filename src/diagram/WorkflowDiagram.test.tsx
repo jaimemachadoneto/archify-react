@@ -233,6 +233,17 @@ describe("WorkflowDiagram", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
+  it("draws an empty spec with no alert and no button", async () => {
+    draw({ version: 1, nodes: [], edges: [] });
+    const group = screen.getByRole("group", { name: "Decision trace" });
+    await vi.waitFor(() => expect(group).not.toHaveAttribute("aria-busy"));
+    expect(layoutDiagram).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    // The zoom controls are buttons too, so the test looks for node buttons only.
+    expect(group.querySelector("button.archify-node")).toBeNull();
+    expect(group.querySelector(".react-flow")).not.toBeNull();
+  });
+
   it("puts the aria label and the height on the group", () => {
     draw(baseSpec);
     const group = screen.getByRole("group", { name: "Decision trace" });

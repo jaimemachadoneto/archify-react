@@ -28,17 +28,19 @@ async function openDemo(page: Page): Promise<void> {
       await expect(nodesOf(page, title).filter({ hasText: label })).toHaveCount(1);
     }
   }
-  // fitView runs after the first measure. Wait until no viewport transform changes between two polls.
+  // fitView runs after the first measure. Wait until it moved every viewport and the transforms stay the same.
   let previous = "";
   await expect
     .poll(
       async () => {
-        const now = await page.evaluate(() =>
-          Array.from(document.querySelectorAll<HTMLElement>(".react-flow__viewport"))
-            .map((viewport) => viewport.style.transform)
-            .join("|"),
+        const transforms = await page.evaluate(() =>
+          Array.from(document.querySelectorAll<HTMLElement>(".react-flow__viewport")).map(
+            (viewport) => viewport.style.transform,
+          ),
         );
-        const stable = now === previous;
+        const now = transforms.join("|");
+        const fitted = transforms.every((t) => t !== "translate(0px, 0px) scale(1)");
+        const stable = fitted && now === previous;
         previous = now;
         return stable;
       },
@@ -311,6 +313,36 @@ test.describe("the states of a node", () => {
   });
 });
 
+// The demo turns a diagram to flow down at "(max-width: 480px)": 480 is narrow and 481 is wide.
+test.describe("when the window narrows", () => {
+  test.use({ viewport: { width: 1000, height: 800 } });
+
+  test("switches the trace diagram to flow down when the window narrows", async ({ page }) => {
+    await openDemo(page);
+    const node = (label: string) => nodesOf(page, "Decision trace").filter({ hasText: label });
+    const boxes = async () => {
+      const start = await node("Receive request").boundingBox();
+      const cache = await node("Check cache").boundingBox();
+      if (!start || !cache) throw new Error("a node has no box");
+      return { start, cache };
+    };
+    const flowsRight = async () => {
+      const { start, cache } = await boxes();
+      return cache.x >= start.x + start.width && cache.y < start.y + start.height;
+    };
+    const flowsDown = async () => {
+      const { start, cache } = await boxes();
+      return cache.y >= start.y + start.height;
+    };
+
+    expect(await flowsRight()).toBe(true);
+    await page.setViewportSize({ width: 480, height: 800 });
+    await expect.poll(flowsDown).toBe(true);
+    await page.setViewportSize({ width: 481, height: 800 });
+    await expect.poll(flowsRight).toBe(true);
+  });
+});
+
 test.describe("at phone width", () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
@@ -344,6 +376,17 @@ test.describe("at phone width", () => {
         expect(size.font, `${title}: font size of "${size.name}"`).toBeGreaterThanOrEqual(9);
       }
     }
+  });
+
+  test("keeps the zoom of every diagram at the minimum zoom or above", async ({ page }) => {
+    await openDemo(page);
+    const zooms = await page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>(".react-flow__viewport")).map((v) =>
+        Number(v.style.transform.match(/scale\(([\d.]+)\)/)?.[1]),
+      ),
+    );
+    expect(zooms).toHaveLength(3);
+    for (const zoom of zooms) expect(zoom).toBeGreaterThanOrEqual(0.7);
   });
 
   test("shows every diagram inside the window", async ({ page }, testInfo) => {

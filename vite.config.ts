@@ -15,5 +15,7 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
+    // The package test builds the library, and ELK loads slowly under load.
+    testTimeout: 15000,
   },
 });

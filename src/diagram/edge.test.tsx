@@ -2,6 +2,13 @@ import { afterEach, describe, it, expect, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import WorkflowDiagram from "./WorkflowDiagram";
 import type { DiagramEdge, DiagramSpec } from "./spec";
+import { layoutDiagram } from "./layout";
+
+// The spy calls the real layout, and a test can replace one result.
+vi.mock("./layout", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./layout")>();
+  return { ...actual, layoutDiagram: vi.fn(actual.layoutDiagram) };
+});
 
 function specWith(edge: Partial<DiagramEdge>): DiagramSpec {
   return {
@@ -184,16 +191,42 @@ describe("edge arrow and label", () => {
     expect(group!.querySelectorAll("animateMotion")).toHaveLength(1);
   });
 
-  it("puts the label in the middle of the edge, not at its end", async () => {
+  it("puts the label in the middle of the longest segment of the edge", async () => {
     const container = await draw(specWith({ label: "yes" }));
     const path = container.querySelector(".archify-edge")?.getAttribute("d") ?? "";
-    const xs = [...path.matchAll(/[ML] (-?[\d.]+) (-?[\d.]+)/g)].map((m) => Number(m[1]));
+    const points = [...path.matchAll(/[ML] (-?[\d.]+) (-?[\d.]+)/g)].map((m) => ({
+      x: Number(m[1]),
+      y: Number(m[2]),
+    }));
+    expect(points.length).toBeGreaterThanOrEqual(2);
+    let middle = { x: NaN, y: NaN };
+    let longest = -1;
+    for (let i = 1; i < points.length; i++) {
+      const length = Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y);
+      if (length > longest) {
+        longest = length;
+        middle = { x: (points[i].x + points[i - 1].x) / 2, y: (points[i].y + points[i - 1].y) / 2 };
+      }
+    }
+    // jsdom measures the text as 0 x 0, so the translate of the label is its centre.
     const label = container.querySelector(".react-flow__edge-text");
-    const x = Number(
-      label?.parentElement?.getAttribute("transform")?.match(/translate\((-?[\d.]+)/)?.[1],
-    );
-    expect(xs.length).toBeGreaterThanOrEqual(2);
-    expect(x).toBeGreaterThan(Math.min(...xs));
-    expect(x).toBeLessThan(Math.max(...xs));
+    const translate = label?.parentElement
+      ?.getAttribute("transform")
+      ?.match(/translate\((-?[\d.]+)[ ,]+(-?[\d.]+)\)/);
+    expect(Number(translate?.[1])).toBeCloseTo(middle.x, 5);
+    expect(Number(translate?.[2])).toBeCloseTo(middle.y, 5);
+  });
+
+  it("draws a path between the handles when the layout gives no sections", async () => {
+    const actual = await vi.importActual<typeof import("./layout")>("./layout");
+    vi.mocked(layoutDiagram).mockImplementationOnce(async (spec) => {
+      const result = await actual.layoutDiagram(spec);
+      return { ...result, edges: result.edges.map((edge) => ({ ...edge, sections: [] })) };
+    });
+    const container = await draw(specWith({}));
+    expect(layoutDiagram).toHaveBeenCalled();
+    const d = container.querySelector(".archify-edge")?.getAttribute("d") ?? "";
+    expect(d).not.toBe("");
+    expect(d).toMatch(/^M/);
   });
 });

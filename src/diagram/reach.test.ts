@@ -80,4 +80,39 @@ describe("reach function", () => {
       'Node id "nonexistent" not found',
     );
   });
+
+  it("returns both branches downstream of a fork", () => {
+    const fork: DiagramSpec = {
+      version: 1,
+      nodes: ["a", "b", "c", "d"].map((id) => ({ id, label: id.toUpperCase() })),
+      edges: [
+        { id: "ab", source: "a", target: "b" },
+        { id: "ac", source: "a", target: "c" },
+        { id: "cd", source: "c", target: "d" },
+      ],
+    };
+    expect(reach(fork, "a", "downstream")).toEqual(["a", "b", "c", "d"]);
+  });
+
+  it("returns both sources upstream of a join", () => {
+    const join: DiagramSpec = {
+      version: 1,
+      nodes: ["a", "b", "c"].map((id) => ({ id, label: id.toUpperCase() })),
+      edges: [
+        { id: "ac", source: "a", target: "c" },
+        { id: "bc", source: "b", target: "c" },
+      ],
+    };
+    expect(reach(join, "c", "upstream")).toEqual(["c", "a", "b"]);
+  });
+
+  it("returns only the node for a self-loop", () => {
+    const loop: DiagramSpec = {
+      version: 1,
+      nodes: [{ id: "a", label: "A" }],
+      edges: [{ id: "aa", source: "a", target: "a" }],
+    };
+    expect(reach(loop, "a", "downstream")).toEqual(["a"]);
+    expect(reach(loop, "a", "upstream")).toEqual(["a"]);
+  });
 });
