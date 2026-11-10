@@ -47,7 +47,7 @@ export function validateSpec(spec: unknown): Problem[] {
   if (!Array.isArray(lanes)) shape("lanes", "the lanes must be an array.");
   if (!Array.isArray(nodes) || !Array.isArray(edges) || !Array.isArray(lanes)) return problems;
 
-  // A spec over a limit gets no more checks, so the list of problems stays short.
+  // Stop early when there is already a problem, so the list of problems stays short.
   if (nodes.length > MAX_NODES) {
     report(
       "TOO_MANY_NODES",

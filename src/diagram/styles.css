@@ -208,6 +208,10 @@
 
 /* Edges. The extra class gives these rules more weight than the React Flow defaults, in any load order. */
 
+.archify-diagram .archify-edge-group {
+  transition: opacity 150ms ease;
+}
+
 .archify-diagram .archify-edge {
   stroke: var(--archify-fg);
   stroke-width: 1.5;

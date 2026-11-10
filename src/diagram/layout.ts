@@ -99,8 +99,7 @@ export async function layoutDiagram(spec: DiagramSpec): Promise<LayoutResult> {
 
   const result = await elk.layout(graph);
 
-  // ELK gives the coordinates of a child relative to its parent.
-  // Add the offset of each parent so that every x and y is absolute.
+  // ELK reports a child relative to its parent; add the parent offsets so x and y are absolute.
   const positions = new Map<string, LaneBox>();
   const laneOrigins = new Map<string, Point>();
   const lanes: LaneBox[] = [];

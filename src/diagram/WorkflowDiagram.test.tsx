@@ -5,9 +5,7 @@ import WorkflowDiagram from "./WorkflowDiagram";
 import type { DiagramSpec } from "./spec";
 import { layoutDiagram } from "./layout";
 
-// The spy calls the real layout, so the tests still draw the real result.
-// The spy lets a test see that an invalid spec never reaches the layout, and
-// lets another test make the layout fail.
+// The spy calls the real layout: a test can watch the calls and force a failure.
 vi.mock("./layout", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./layout")>();
   return { ...actual, layoutDiagram: vi.fn(actual.layoutDiagram) };
@@ -116,8 +114,7 @@ describe("WorkflowDiagram", () => {
   it("calls onSelect with the node id exactly once for a click", async () => {
     const onSelect = vi.fn();
     draw(baseSpec, { onSelect });
-    // fireEvent sends only the click. userEvent.click also sends a mousedown without
-    // a window, which the pan handler of React Flow (d3-zoom) cannot read in jsdom.
+    // fireEvent sends only a click; userEvent sends a mousedown that d3-zoom cannot read in jsdom.
     fireEvent.click(await screen.findByRole("button", { name: /Beta/ }));
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith("beta");
@@ -417,6 +414,32 @@ describe("WorkflowDiagram", () => {
         />,
       );
       await screen.findByRole("button", { name: /Beta/ });
+      expect(view.container.querySelector("[data-dimmed]")).toBeNull();
+    });
+
+    it("clears the active node when the spec removes it, so a later spec shows no ghost highlight", async () => {
+      const view = draw(forkSpec);
+      await userEvent.hover(await node("Node D"));
+      view.rerender(
+        <WorkflowDiagram
+          spec={baseSpec}
+          selectedId={null}
+          onSelect={() => {}}
+          height={400}
+          ariaLabel="Decision trace"
+        />,
+      );
+      await screen.findByRole("button", { name: /Beta/ });
+      view.rerender(
+        <WorkflowDiagram
+          spec={forkSpec}
+          selectedId={null}
+          onSelect={() => {}}
+          height={400}
+          ariaLabel="Decision trace"
+        />,
+      );
+      await node("Node D");
       expect(view.container.querySelector("[data-dimmed]")).toBeNull();
     });
   });
