@@ -270,7 +270,7 @@ These commands work in the project shell:
 
 `pnpm build:pages` writes the demo for the project site, with `/archify-react/` as the base. The workflow `.github/workflows/pages.yaml` publishes it.
 
-The demo page holds three examples. Run `pnpm dev`. Then open `http://localhost:5173`. The demo reads the same variables as a host app.
+The demo page holds three examples and a playground. The playground changes the direction, the highlight, the spec and the look. Run `pnpm dev`. Then open `http://localhost:5173`. The demo reads the same variables as a host app.
 
 ## Licence
 

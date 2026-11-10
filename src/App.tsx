@@ -21,8 +21,8 @@ export default function App() {
           <p className="text-xs text-muted-foreground">archify-react</p>
           <h1 className="text-xl font-bold tracking-tight">Workflow diagrams</h1>
           <p className="max-w-prose text-sm text-muted-foreground">
-            Three examples with invented data. Hover or focus a step to follow its path. Press a
-            step to select it.
+            Three examples and a playground, all with invented data. Hover or focus a step to follow
+            its path. Press a step to select it.
           </p>
         </div>
         <Button
