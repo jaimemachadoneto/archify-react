@@ -14,9 +14,17 @@ export interface LaneBox {
   height: number;
 }
 
+export interface EdgeSection {
+  startPoint: Point;
+  endPoint: Point;
+  bendPoints?: Point[];
+}
+
 export interface LayoutResult {
   nodes: Array<DiagramNode & { x: number; y: number; width: number; height: number }>;
-  edges: Array<DiagramEdge & { sections: Array<{ startPoint: Point; endPoint: Point }> }>;
+  // Absolute coordinates. The sections of an edge to a node with a fixed
+  // position are not recalculated: they keep the route that ELK found for the free node.
+  edges: Array<DiagramEdge & { sections: EdgeSection[] }>;
   lanes: LaneBox[];
 }
 
@@ -72,6 +80,7 @@ export async function layoutDiagram(spec: DiagramSpec): Promise<LayoutResult> {
       "elk.algorithm": "layered",
       "elk.direction": spec.direction ?? "RIGHT",
       "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+      // Space between nodes in one layer, and between layers, so that edge labels fit.
       "elk.spacing.nodeNode": "40",
       "elk.layered.spacing.nodeNodeBetweenLayers": "50",
     },
@@ -84,6 +93,7 @@ export async function layoutDiagram(spec: DiagramSpec): Promise<LayoutResult> {
   // ELK gives the coordinates of a child relative to its parent.
   // Add the offset of each parent so that every x and y is absolute.
   const positions = new Map<string, LaneBox>();
+  const laneOrigins = new Map<string, Point>();
   const lanes: LaneBox[] = [];
   const walk = (children: ElkNode[], offset: Point): void => {
     for (const child of children) {
@@ -95,7 +105,9 @@ export async function layoutDiagram(spec: DiagramSpec): Promise<LayoutResult> {
         height: child.height ?? NODE_HEIGHT,
       };
       if (child.id.startsWith(LANE_PREFIX) && laneNodes.has(child.id.slice(LANE_PREFIX.length))) {
-        lanes.push({ ...box, id: child.id.slice(LANE_PREFIX.length) });
+        const laneId = child.id.slice(LANE_PREFIX.length);
+        lanes.push({ ...box, id: laneId });
+        laneOrigins.set(laneId, { x: box.x, y: box.y });
         walk(child.children ?? [], { x: box.x, y: box.y });
       } else {
         positions.set(child.id, box);
@@ -130,9 +142,21 @@ export async function layoutDiagram(spec: DiagramSpec): Promise<LayoutResult> {
     }
   }
 
+  // ELK gives the points of an edge relative to the lowest common parent of its
+  // two nodes. An edge inside one lane is relative to that lane, any other edge to the root.
+  const laneOf = new Map(spec.nodes.map((node) => [node.id, node.lane]));
   const laidOutEdges = spec.edges.map((edge) => {
     const elkEdge = result.edges?.find((e) => e.id === edge.id);
-    return { ...edge, sections: elkEdge?.sections ?? [] };
+    const sourceLane = laneOf.get(edge.source);
+    const sameLane = sourceLane !== undefined && sourceLane === laneOf.get(edge.target);
+    const origin = (sameLane && laneOrigins.get(sourceLane)) || { x: 0, y: 0 };
+    const move = (p: Point): Point => ({ x: p.x + origin.x, y: p.y + origin.y });
+    const sections = (elkEdge?.sections ?? []).map((section) => ({
+      startPoint: move(section.startPoint),
+      endPoint: move(section.endPoint),
+      ...(section.bendPoints && { bendPoints: section.bendPoints.map(move) }),
+    }));
+    return { ...edge, sections };
   });
 
   return { nodes, edges: laidOutEdges, lanes };

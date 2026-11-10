@@ -1,9 +1,19 @@
 import { describe, it, expect } from "vitest";
-import { layoutDiagram, findOverlaps } from "./layout";
+import { layoutDiagram, findOverlaps, type LayoutResult } from "./layout";
 import { DiagramSpec } from "./spec";
 
+type PlacedNode = LayoutResult["nodes"][number];
+type LaneBox = LayoutResult["lanes"][number];
+
+function expectInside(node: PlacedNode, box: LaneBox): void {
+  expect(node.x).toBeGreaterThanOrEqual(box.x);
+  expect(node.x + node.width).toBeLessThanOrEqual(box.x + box.width);
+  expect(node.y).toBeGreaterThanOrEqual(box.y);
+  expect(node.y + node.height).toBeLessThanOrEqual(box.y + box.height);
+}
+
 describe("layoutDiagram", () => {
-  it("should work", async () => {
+  it("returns one placed node per node and one edge per edge", async () => {
     const spec: DiagramSpec = {
       version: 1,
       nodes: [
@@ -35,6 +45,9 @@ describe("layoutDiagram", () => {
     const result = await layoutDiagram(spec);
     const jev = result.nodes.find((n) => n.id === "jev")!;
     const kev = result.nodes.find((n) => n.id === "kev")!;
+    const source = result.nodes.find((n) => n.id === "source")!;
+    // The source is in an earlier layer, so it is in a column to the left.
+    expect(source.x).toBeLessThan(jev.x);
     // With direction RIGHT a layer is a column, so the same layer means the same x.
     expect(jev.x).toBe(kev.x);
   });
@@ -139,10 +152,44 @@ describe("layoutDiagram", () => {
     for (const node of result.nodes) {
       const box = result.lanes.find((l) => l.id === node.lane)!;
       expect(box).toBeDefined();
-      expect(node.x).toBeGreaterThanOrEqual(box.x);
-      expect(node.x + node.width).toBeLessThanOrEqual(box.x + box.width);
-      expect(node.y).toBeGreaterThanOrEqual(box.y);
-      expect(node.y + node.height).toBeLessThanOrEqual(box.y + box.height);
+      expectInside(node, box);
+    }
+  });
+
+  it("gives absolute edge coordinates for an edge in a lane and an edge that crosses lanes", async () => {
+    const spec: DiagramSpec = {
+      version: 1,
+      direction: "RIGHT",
+      lanes: [
+        { id: "lane1", label: "Lane 1" },
+        { id: "lane2", label: "Lane 2" },
+      ],
+      nodes: [
+        { id: "a", label: "A", lane: "lane1" },
+        { id: "b", label: "B", lane: "lane1" },
+        { id: "c", label: "C", lane: "lane2" },
+      ],
+      edges: [
+        { id: "e1", source: "a", target: "b" },
+        { id: "e2", source: "b", target: "c" },
+      ],
+    };
+    const result = await layoutDiagram(spec);
+    const margin = 5;
+    for (const edge of result.edges) {
+      const source = result.nodes.find((n) => n.id === edge.source)!;
+      const target = result.nodes.find((n) => n.id === edge.target)!;
+      const first = edge.sections[0].startPoint;
+      const last = edge.sections[edge.sections.length - 1].endPoint;
+      // A relative coordinate would be far from the box of the node.
+      expect(first.x).toBeGreaterThanOrEqual(source.x - margin);
+      expect(first.x).toBeLessThanOrEqual(source.x + source.width + margin);
+      expect(first.y).toBeGreaterThanOrEqual(source.y - margin);
+      expect(first.y).toBeLessThanOrEqual(source.y + source.height + margin);
+      expect(last.x).toBeGreaterThanOrEqual(target.x - margin);
+      expect(last.x).toBeLessThanOrEqual(target.x + target.width + margin);
+      expect(last.y).toBeGreaterThanOrEqual(target.y - margin);
+      expect(last.y).toBeLessThanOrEqual(target.y + target.height + margin);
     }
   });
 
@@ -174,9 +221,34 @@ describe("layoutDiagram", () => {
       edges: [{ id: "e1", source: "a", target: "b" }],
     };
     const result = await layoutDiagram(spec);
+    const a = result.nodes.find((n) => n.id === "a")!;
     const b = result.nodes.find((n) => n.id === "b")!;
     expect(b.x).toBe(300);
     expect(b.y).toBe(120);
+    // The lane box grows to hold the fixed node and still holds the other node.
+    const box = result.lanes.find((l) => l.id === "lane1")!;
+    expectInside(a, box);
+    expectInside(b, box);
+  });
+
+  it("does not recalculate the edge sections for a node with a fixed position", async () => {
+    const free: DiagramSpec = {
+      version: 1,
+      direction: "RIGHT",
+      nodes: [
+        { id: "a", label: "A" },
+        { id: "b", label: "B" },
+      ],
+      edges: [{ id: "e1", source: "a", target: "b" }],
+    };
+    const fixed: DiagramSpec = {
+      ...free,
+      nodes: [free.nodes[0], { ...free.nodes[1], position: { x: 500, y: 300 } }],
+    };
+    const freeResult = await layoutDiagram(free);
+    const fixedResult = await layoutDiagram(fixed);
+    // The limit is known: the edge keeps the route that ELK found for the free node.
+    expect(fixedResult.edges[0].sections).toEqual(freeResult.edges[0].sections);
   });
 
   it("gives the same result for the same spec (deterministic)", async () => {
