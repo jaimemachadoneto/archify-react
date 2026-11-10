@@ -14,7 +14,7 @@ function baseSpec(): DiagramSpec {
 }
 
 describe("validateSpec", () => {
-  it("returns empty list for a correct spec", () => {
+  it("returns an empty list for a correct spec", () => {
     const spec = baseSpec();
     const problems = validateSpec(spec);
     expect(problems).toEqual([]);
@@ -38,7 +38,7 @@ describe("validateSpec", () => {
     expect(problems[0].message).toContain("e1");
   });
 
-  it("detects edge with unknown source", () => {
+  it("detects an edge with an unknown source", () => {
     const spec = baseSpec();
     spec.edges[0].source = "unknown";
     const problems = validateSpec(spec);
@@ -47,7 +47,7 @@ describe("validateSpec", () => {
     expect(problems[0].message).toContain("unknown");
   });
 
-  it("detects edge with unknown target", () => {
+  it("detects an edge with an unknown target", () => {
     const spec = baseSpec();
     spec.edges[0].target = "unknown";
     const problems = validateSpec(spec);
@@ -56,7 +56,7 @@ describe("validateSpec", () => {
     expect(problems[0].message).toContain("unknown");
   });
 
-  it("detects node with lane not in lanes", () => {
+  it("detects a node with a lane that the spec does not define", () => {
     const spec = baseSpec();
     spec.lanes = [{ id: "lane1", label: "Lane 1" }];
     spec.nodes[0].lane = "unknown-lane";
@@ -66,7 +66,7 @@ describe("validateSpec", () => {
     expect(problems[0].message).toContain("unknown-lane");
   });
 
-  it("detects invalid version", () => {
+  it("detects an invalid version", () => {
     const spec = baseSpec();
     spec.version = 2 as any;
     const problems = validateSpec(spec);
@@ -75,7 +75,7 @@ describe("validateSpec", () => {
     expect(problems[0].message).toContain("2");
   });
 
-  it("allows cycles", () => {
+  it("allows a cycle", () => {
     const spec = baseSpec();
     spec.edges.push({ id: "e2", source: "b", target: "a" });
     const problems = validateSpec(spec);

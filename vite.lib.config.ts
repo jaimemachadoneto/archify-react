@@ -1,12 +1,10 @@
 import { defineConfig } from "vite";
 
-// The consumer's bundler resolves every package below, so the output holds only the code of the library.
-// The regular expressions also match deep imports, such as "elkjs/lib/elk.bundled.js".
+// The consumer's bundler resolves every external package, including deep imports such as elkjs/lib.
 const external = [/^react(\/|$)/, /^react-dom(\/|$)/, /^@xyflow\/react(\/|$)/, /^elkjs(\/|$)/];
 
 export default defineConfig({
-  // No React plugin: it picks the development JSX runtime when NODE_ENV is "test", as in vitest.
-  // The library must always import "react/jsx-runtime".
+  // No React plugin, so the build keeps "react/jsx-runtime" also when NODE_ENV is "test".
   oxc: { jsx: { runtime: "automatic", development: false } },
   build: {
     lib: {

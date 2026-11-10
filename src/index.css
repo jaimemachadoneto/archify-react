@@ -1,6 +1,5 @@
 @import "tailwindcss";
-/* The shared design: colours, radius and fonts from devbase design/tokens.json.
-   Do not edit these two files here. Run `base design sync archify-react` instead. */
+/* Generated from the shared design: run `base design sync archify-react`, do not edit these files. */
 @import "./styles/tokens.css";
 @import "./styles/theme.css";
 

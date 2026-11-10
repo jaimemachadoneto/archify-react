@@ -1,7 +1,6 @@
 export type Theme = "light" | "dark";
 
-// The theme is a class on <html>: tokens.css defines the colours for
-// .light and .dark. With neither class, the system preference applies.
+// The class on <html> forces the theme. With no class, the system preference applies.
 export function applyTheme(theme: Theme, root: HTMLElement = document.documentElement) {
   root.classList.remove("light", "dark");
   root.classList.add(theme);

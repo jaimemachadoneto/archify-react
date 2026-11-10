@@ -17,7 +17,7 @@ export type DiagramNodeData = {
 export type DiagramFlowNode = FlowNode<DiagramNodeData, "step">;
 
 // The button is the only click target, so one click calls onSelect once.
-// A native button also gives Enter and Space for free.
+// A native button also gives the Enter and the Space keys.
 const Node: FC<NodeProps<DiagramFlowNode>> = ({
   id,
   data,

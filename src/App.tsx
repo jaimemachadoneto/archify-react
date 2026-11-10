@@ -30,7 +30,7 @@ export default function App() {
           size="icon"
           className="ml-auto shrink-0"
           onClick={toggleTheme}
-          aria-label={theme === "dark" ? "Light theme" : "Dark theme"}
+          aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
         >
           {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
         </Button>

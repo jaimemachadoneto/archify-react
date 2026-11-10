@@ -251,8 +251,7 @@
   opacity: 0.6;
 }
 
-/* A skipped node has muted text already. Opacity would make it unreadable (under 3:1),
-   so only its border fades. */
+/* A skipped node has muted text. Opacity would make it unreadable, so only its border fades. */
 .archify-diagram .archify-node[data-state="skipped"][data-dimmed] {
   opacity: 1;
   border-color: var(--archify-border);

@@ -32,7 +32,11 @@ export function validateSpec(spec: unknown): Problem[] {
   }
 
   if (spec.version !== 1) {
-    report("INVALID_VERSION", "version", `Version must be 1, got ${String(spec.version)}`);
+    report(
+      "INVALID_VERSION",
+      "version",
+      `The version must be 1. The version in the spec is ${String(spec.version)}.`,
+    );
   }
   if (spec.direction !== undefined && !DIRECTIONS.includes(spec.direction as string)) {
     shape("direction", 'the direction must be "RIGHT" or "DOWN".');

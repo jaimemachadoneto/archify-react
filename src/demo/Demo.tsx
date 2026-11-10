@@ -6,7 +6,7 @@ import { useMediaQuery } from "@/diagram/useMediaQuery";
 
 // The demo text is invented and generic. Each id is unique in the whole page.
 
-// A request goes through a classifier. One branch is not used, and one step fails.
+// A request goes through a classifier. One branch is skipped, and one step fails.
 const traceSpec: DiagramSpec = {
   version: 1,
   direction: "RIGHT",
@@ -35,7 +35,7 @@ const traceSpec: DiagramSpec = {
       id: "trace-cache",
       label: "Check cache",
       state: "skipped",
-      summary: "The topic is new, so the cache has no answer. This step did not run.",
+      summary: "The topic is new, so the cache has no answer. This step is skipped.",
     },
     {
       id: "trace-search",
@@ -53,7 +53,7 @@ const traceSpec: DiagramSpec = {
       id: "trace-clarify",
       label: "Ask to clarify",
       state: "used",
-      summary: "The system asks the user for one more detail, then tries again.",
+      summary: "The system asks the user for one more detail and then sends the answer.",
     },
     {
       id: "trace-answer",
@@ -194,7 +194,7 @@ type DemoItem = {
 const demos: DemoItem[] = [
   {
     title: "Decision trace",
-    text: "The path of one request. A dashed step did not run, and a red step failed.",
+    text: "The path of one request. A dashed step was skipped. A step with the caption failed did not complete.",
     height: 220,
     narrowHeight: 760,
     turnsOnNarrow: true,

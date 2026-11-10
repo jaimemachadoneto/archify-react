@@ -127,8 +127,7 @@ export async function layoutDiagram(spec: DiagramSpec): Promise<LayoutResult> {
 
   const nodes = spec.nodes.map((node) => {
     const box = positions.get(node.id)!;
-    // ELK ignores "elk.fixedPosition" in the layered algorithm, so the
-    // position of the spec is applied here, after the layout.
+    // ELK ignores a fixed position in the layered algorithm, so the spec applies it here.
     return {
       ...node,
       x: node.position?.x ?? box.x,
@@ -151,8 +150,7 @@ export async function layoutDiagram(spec: DiagramSpec): Promise<LayoutResult> {
     }
   }
 
-  // ELK gives the points of an edge relative to the lowest common parent of its
-  // two nodes. An edge inside one lane is relative to that lane, any other edge to the root.
+  // ELK gives the edge points relative to their parent: one lane, or the root.
   const laneOf = new Map(spec.nodes.map((node) => [node.id, node.lane]));
   const fixed = new Set(spec.nodes.filter((node) => node.position).map((node) => node.id));
   const laidOutEdges = spec.edges.map((edge) => {

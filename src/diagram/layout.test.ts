@@ -28,28 +28,26 @@ describe("layoutDiagram", () => {
     expect(result.edges).toHaveLength(1);
   });
 
-  it("places two nodes with one source on the same layer (Jev and Kev case)", async () => {
+  it("places two nodes with one source on the same layer", async () => {
     const spec: DiagramSpec = {
       version: 1,
       direction: "RIGHT",
       nodes: [
-        { id: "jev", label: "Jev" },
-        { id: "kev", label: "Kev" },
-        { id: "source", label: "Source" },
+        { id: "alpha", label: "Alpha" },
+        { id: "beta", label: "Beta" },
+        { id: "gamma", label: "Gamma" },
       ],
       edges: [
-        { id: "e1", source: "source", target: "jev" },
-        { id: "e2", source: "source", target: "kev" },
+        { id: "e1", source: "gamma", target: "alpha" },
+        { id: "e2", source: "gamma", target: "beta" },
       ],
     };
     const result = await layoutDiagram(spec);
-    const jev = result.nodes.find((n) => n.id === "jev")!;
-    const kev = result.nodes.find((n) => n.id === "kev")!;
-    const source = result.nodes.find((n) => n.id === "source")!;
-    // The source is in an earlier layer, so it is in a column to the left.
-    expect(source.x).toBeLessThan(jev.x);
-    // With direction RIGHT a layer is a column, so the same layer means the same x.
-    expect(jev.x).toBe(kev.x);
+    const alpha = result.nodes.find((n) => n.id === "alpha")!;
+    const beta = result.nodes.find((n) => n.id === "beta")!;
+    const gamma = result.nodes.find((n) => n.id === "gamma")!;
+    expect(gamma.x).toBeLessThan(alpha.x);
+    expect(alpha.x).toBe(beta.x);
   });
 
   it("returns empty overlaps for a simple line", async () => {
@@ -127,7 +125,7 @@ describe("layoutDiagram", () => {
     expect(overlaps).toHaveLength(0);
   });
 
-  it("places lane nodes inside their lane box", async () => {
+  it("places each node inside the box of its lane", async () => {
     const spec: DiagramSpec = {
       version: 1,
       direction: "RIGHT",

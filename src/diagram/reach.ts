@@ -5,18 +5,15 @@ export function reach(
   id: string,
   direction: "upstream" | "downstream",
 ): string[] {
-  // Validate inputs
   if (!["upstream", "downstream"].includes(direction)) {
-    throw new Error("Invalid direction");
+    throw new Error('The direction must be "upstream" or "downstream"');
   }
 
-  // Validate node id exists
   const nodeIds = new Set(spec.nodes.map((n) => n.id));
   if (!nodeIds.has(id)) {
-    throw new Error(`Node id "${id}" not found`);
+    throw new Error(`The node ID "${id}" does not exist`);
   }
 
-  // Build adjacency maps
   const downstream = new Map<string, string[]>();
   const upstream = new Map<string, string[]>();
 
@@ -29,7 +26,6 @@ export function reach(
     upstream.set(target, [...upstreamTargets, source]);
   }
 
-  // Traverse
   const visited = new Set<string>();
   const queue = [id];
   visited.add(id);

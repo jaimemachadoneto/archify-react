@@ -49,7 +49,6 @@ async function openDemo(page: Page): Promise<void> {
     .toBe(true);
 }
 
-// Move the keyboard focus from the theme button to the first node button with the Tab key.
 async function tabToNode(page: Page): Promise<void> {
   await page.getByRole("button", { name: /theme/i }).focus();
   let onNode = false;
@@ -230,7 +229,6 @@ test.describe("the demo page", () => {
     for (const { slug, title } of diagrams) {
       const group = diagram(page, title);
       await group.scrollIntoViewIfNeeded();
-      // The copy in test-results/review is the one that the ui-reviewer reads.
       await group.screenshot({ path: testInfo.outputPath(`${slug}.png`) });
       await group.screenshot({ path: `test-results/review/${testInfo.project.name}-${slug}.png` });
     }
@@ -242,7 +240,6 @@ test.describe("the demo page", () => {
 });
 
 test.describe("the states of a node", () => {
-  // Each screenshot shows one state in the Decision trace. The ui-reviewer reads them.
   test("takes a screenshot of the focus, selected, hover and failed states", async ({
     page,
   }, testInfo) => {
@@ -253,25 +250,21 @@ test.describe("the states of a node", () => {
       group.screenshot({ path: `test-results/review/${testInfo.project.name}-state-${name}.png` });
     const blur = () => page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
 
-    // Focus with the keyboard: the ring and the highlighted path.
     await tabToNode(page);
     await expect(page.locator("button.archify-node:focus")).toBeVisible();
     await shot("focus");
     await blur();
 
-    // Selected: no pointer and no focus, so only the selected style shows.
     await nodesOf(page, title).filter({ hasText: "Classify intent" }).click();
     await blur();
     await page.mouse.move(2, 2);
     await expect(group.locator("[data-dimmed]")).toHaveCount(0);
     await shot("selected");
 
-    // Hover: the path of the node is clear and the rest is dimmed.
     await nodesOf(page, title).filter({ hasText: "Search sources" }).hover();
     await expect(group.locator("button.archify-node[data-dimmed]").first()).toBeVisible();
     await shot("hover");
 
-    // A selected failed node, and a selected skipped node.
     await nodesOf(page, title).filter({ hasText: "Check facts" }).click();
     await blur();
     await page.mouse.move(2, 2);

@@ -12,7 +12,7 @@ export interface WorkflowDiagramProps {
   // A new object with the same content does not run the layout again.
   spec: DiagramSpec;
   selectedId: string | null;
-  // Pass a stable function (for example a state setter), or the component rebuilds the step nodes on each render.
+  // Pass a stable function (for example a state setter), or the component rebuilds the nodes on each render.
   onSelect: (id: string) => void;
   height: number;
   ariaLabel: string;

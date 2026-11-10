@@ -16,7 +16,7 @@ describe("reach function", () => {
     ],
   };
 
-  it("should return only the start node when there are no edges", () => {
+  it("returns only the start node when the spec has no edges", () => {
     const spec = {
       ...baseSpec,
       edges: [],
@@ -25,7 +25,7 @@ describe("reach function", () => {
     expect(result).toEqual(["a"]);
   });
 
-  it("should traverse downstream correctly", () => {
+  it("returns the nodes downstream in order", () => {
     const spec = {
       ...baseSpec,
     };
@@ -33,7 +33,7 @@ describe("reach function", () => {
     expect(result).toEqual(["a", "b", "c"]);
   });
 
-  it("should traverse upstream correctly", () => {
+  it("returns the nodes upstream in order", () => {
     const spec = {
       ...baseSpec,
     };
@@ -41,7 +41,7 @@ describe("reach function", () => {
     expect(result).toEqual(["c", "b", "a"]);
   });
 
-  it("should handle a node with no incoming or outgoing edges", () => {
+  it("returns the node and its source for a node with no outgoing edges", () => {
     const spec = {
       ...baseSpec,
       nodes: [...baseSpec.nodes, { id: "d", label: "D" }],
@@ -53,7 +53,7 @@ describe("reach function", () => {
     expect(result2).toEqual(["d", "a"]);
   });
 
-  it("should handle a cycle correctly and not loop infinitely", () => {
+  it("returns each node once for a cycle", () => {
     const cycleSpec: DiagramSpec = {
       version: 1,
       nodes: [
@@ -69,15 +69,17 @@ describe("reach function", () => {
     expect(result).toEqual(["x", "y"]);
   });
 
-  it("should throw error for invalid direction", () => {
+  it("throws an error for an invalid direction", () => {
     const spec = baseSpec;
-    expect(() => reach(spec, "a", "invalid" as unknown as "upstream")).toThrow("Invalid direction");
+    expect(() => reach(spec, "a", "invalid" as unknown as "upstream")).toThrow(
+      'The direction must be "upstream" or "downstream"',
+    );
   });
 
-  it("should throw error for non-existent node id", () => {
+  it("throws an error for a node ID that does not exist", () => {
     const spec = baseSpec;
     expect(() => reach(spec, "nonexistent", "downstream")).toThrow(
-      'Node id "nonexistent" not found',
+      'The node ID "nonexistent" does not exist',
     );
   });
 

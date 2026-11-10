@@ -42,10 +42,10 @@ describe("App", () => {
     render(<App />);
     const root = document.documentElement;
 
-    await userEvent.click(screen.getByRole("button", { name: "Dark theme" }));
+    await userEvent.click(screen.getByRole("button", { name: "Switch to dark theme" }));
     expect(root).toHaveClass("dark");
 
-    await userEvent.click(screen.getByRole("button", { name: "Light theme" }));
+    await userEvent.click(screen.getByRole("button", { name: "Switch to light theme" }));
     expect(root).toHaveClass("light");
     expect(root).not.toHaveClass("dark");
   });

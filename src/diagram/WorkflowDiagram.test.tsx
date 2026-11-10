@@ -46,7 +46,7 @@ const invalidSpec: DiagramSpec = {
   edges: [{ id: "e1", source: "alpha", target: "missing" }],
 };
 
-// a -> b and a -> c fork, and c -> d continues one branch.
+// a -> b and a -> c fork, and c -> d continues one path.
 const forkSpec: DiagramSpec = {
   version: 1,
   nodes: [
@@ -542,7 +542,7 @@ describe("WorkflowDiagram", () => {
   });
 
   describe("the failed state", () => {
-    it("says in words that a step failed, not with a colour only", async () => {
+    it("says in words that a node failed, not with a colour only", async () => {
       draw({
         ...baseSpec,
         nodes: [

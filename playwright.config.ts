@@ -1,7 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// End-to-end tests run against the dev server: `pnpm e2e`. The ui-reviewer
-// agent uses the screenshots they write to test-results/.
+// End-to-end tests run against the dev server: `pnpm e2e` (light and dark).
 export default defineConfig({
   testDir: "e2e",
   use: { baseURL: "http://localhost:5173" },
