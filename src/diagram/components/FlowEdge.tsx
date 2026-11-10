@@ -1,4 +1,4 @@
-import type { FC } from "react";
+import { useSyncExternalStore, type FC } from "react";
 import { BaseEdge, getSmoothStepPath, type Edge as FlowEdge, type EdgeProps } from "@xyflow/react";
 import type { DiagramEdge } from "../spec";
 import type { EdgeSection } from "../layout";
@@ -20,7 +20,26 @@ function pathOf(sections: EdgeSection[]): { path: string; labelX: number; labelY
   return { path, labelX: middle.x, labelY: middle.y };
 }
 
-// TODO: Task 6 moves the dot along the path (data.animated) in components/Edge.tsx.
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+
+// CSS cannot stop an SVG animateMotion, so the component reads the media query in JavaScript.
+// A browser without matchMedia, or no window, counts as "no preference".
+function subscribeToMotion(onChange: () => void): () => void {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return () => {};
+  const query = window.matchMedia(REDUCED_MOTION);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia(REDUCED_MOTION).matches;
+}
+
+function useReducedMotion(): boolean {
+  return useSyncExternalStore(subscribeToMotion, prefersReducedMotion, () => false);
+}
+
 const FlowEdgeView: FC<EdgeProps<DiagramFlowEdge>> = ({
   id,
   data,
@@ -42,16 +61,29 @@ const FlowEdgeView: FC<EdgeProps<DiagramFlowEdge>> = ({
     targetPosition,
   });
 
+  const path = routed?.path ?? fallbackPath;
+  const reducedMotion = useReducedMotion();
+  // Only a used edge shows the dot: a skipped or a failed edge carries no flow.
+  const state = data?.state ?? "used";
+  const showDot = data?.animated === true && state === "used" && !reducedMotion;
+
   return (
-    <BaseEdge
-      id={id}
-      path={routed?.path ?? fallbackPath}
-      labelX={routed?.labelX ?? fallbackX}
-      labelY={routed?.labelY ?? fallbackY}
-      label={data?.label}
-      className="archify-edge"
-      data-state={data?.state ?? "used"}
-    />
+    <>
+      <BaseEdge
+        id={id}
+        path={path}
+        labelX={routed?.labelX ?? fallbackX}
+        labelY={routed?.labelY ?? fallbackY}
+        label={data?.label}
+        className="archify-edge"
+        data-state={state}
+      />
+      {showDot && (
+        <circle r="4" className="archify-edge-dot">
+          <animateMotion dur="2s" repeatCount="indefinite" path={path} />
+        </circle>
+      )}
+    </>
   );
 };
 
