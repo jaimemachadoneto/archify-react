@@ -9,6 +9,8 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(import.meta.dirname, "src") },
   },
+  // The demo goes to its own folder. The library build writes to dist.
+  build: { outDir: "dist-demo" },
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],

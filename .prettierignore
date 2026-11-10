@@ -1,4 +1,5 @@
 dist
+dist-demo
 pnpm-lock.yaml
 src/styles/tokens.css
 src/styles/theme.css

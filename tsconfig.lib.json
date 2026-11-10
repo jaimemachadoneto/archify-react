@@ -11,9 +11,12 @@
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "isolatedModules": true,
-    "noEmit": true,
-    "types": ["vite/client", "node", "@testing-library/jest-dom"],
-    "paths": { "@/*": ["./src/*"] }
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist",
+    "rootDir": "src/diagram",
+    "types": ["vite/client"]
   },
-  "include": ["src/diagram"]
+  "include": ["src/diagram"],
+  "exclude": ["src/diagram/**/*.test.ts", "src/diagram/**/*.test.tsx"]
 }

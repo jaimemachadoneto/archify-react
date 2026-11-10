@@ -1,33 +1,20 @@
-/// <reference types="vitest/config" />
-import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+// The consumer's bundler resolves every package below, so the output holds only the code of the library.
+// The regular expressions also match deep imports, such as "elkjs/lib/elk.bundled.js".
+const external = [/^react(\/|$)/, /^react-dom(\/|$)/, /^@xyflow\/react(\/|$)/, /^elkjs(\/|$)/];
+
 export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@": "./src",
-    },
-  },
+  // No React plugin: it picks the development JSX runtime when NODE_ENV is "test", as in vitest.
+  // The library must always import "react/jsx-runtime".
+  oxc: { jsx: { runtime: "automatic", development: false } },
   build: {
     lib: {
       entry: "src/diagram/index.ts",
       formats: ["es"],
+      fileName: "index",
+      cssFileName: "styles",
     },
-    rollupOptions: {
-      external: ["react", "react-dom", "react/jsx-runtime"],
-      output: {
-        globals: {
-          react: "React",
-          "react-dom": "ReactDOM",
-          "react/jsx-runtime": "React",
-        },
-      },
-    },
-  },
-  test: {
-    environment: "jsdom",
-    setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.test.{ts,tsx}"],
+    rollupOptions: { external },
   },
 });
