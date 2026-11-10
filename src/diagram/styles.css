@@ -95,9 +95,24 @@
   color: var(--accent-foreground);
 }
 
+/* A selected skipped node keeps the dashed border, and it is bold with a ring: not a colour only. */
+.archify-node--selected[data-state="skipped"] {
+  border-color: var(--foreground);
+  box-shadow: inset 0 0 0 1px var(--foreground);
+  font-weight: 700;
+}
+
 .archify-node[data-state="failed"] {
   border-color: var(--destructive);
   box-shadow: inset 0 0 0 1px var(--destructive);
+}
+
+/* A selected failed node keeps the destructive border and adds a second ring in the text colour. */
+.archify-node--selected[data-state="failed"] {
+  border-color: var(--destructive);
+  box-shadow:
+    inset 0 0 0 1px var(--destructive),
+    inset 0 0 0 3px var(--foreground);
 }
 
 .archify-node[data-state="failed"] .archify-node__note {
@@ -155,8 +170,11 @@
   stroke-width: 2;
 }
 
+/* The dot is hollow and uses neutral tokens: the signal colour is for the focus ring only. */
 .archify-diagram .archify-edge-dot {
-  fill: var(--primary);
+  fill: var(--card);
+  stroke: var(--foreground);
+  stroke-width: 1.5;
   transition: opacity 150ms ease;
 }
 
@@ -175,7 +193,14 @@
 /* Dimming: a node, an edge or a dot that is not on the highlighted path. */
 
 .archify-diagram [data-dimmed] {
-  opacity: 0.35;
+  opacity: 0.5;
+}
+
+/* A skipped node has muted text already. Opacity would make it unreadable (under 3:1),
+   so only its border fades. */
+.archify-diagram .archify-node[data-state="skipped"][data-dimmed] {
+  opacity: 1;
+  border-color: var(--border);
 }
 
 /* The selected node stays easy to read, also when it is not on the path. */

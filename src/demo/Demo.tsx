@@ -1,6 +1,7 @@
-import { useState, type FC } from "react";
+import { useMemo, useState, type FC } from "react";
 import WorkflowDiagram from "@/diagram/WorkflowDiagram";
 import type { DiagramSpec } from "@/diagram/spec";
+import { useMediaQuery } from "./useMediaQuery";
 
 // The demo text is invented and generic. Each id is unique in the whole page.
 
@@ -175,29 +176,64 @@ const retrySpec: DiagramSpec = {
   ],
 };
 
-const demos: Array<{ title: string; text: string; height: number; spec: DiagramSpec }> = [
+// A phone is at most this wide. A diagram that flows to the right is too wide for it.
+const NARROW = "(max-width: 480px)";
+
+type DemoItem = {
+  title: string;
+  text: string;
+  height: number;
+  // The height when the diagram flows from the top down on a narrow window.
+  narrowHeight: number;
+  // A diagram that flows to the right turns to flow down on a narrow window.
+  turnsOnNarrow: boolean;
+  spec: DiagramSpec;
+};
+
+const demos: DemoItem[] = [
   {
     title: "Decision trace",
     text: "The path of one request. A dashed step did not run, and a red step failed.",
     height: 300,
+    narrowHeight: 760,
+    turnsOnNarrow: true,
     spec: traceSpec,
   },
   {
     title: "Approval with lanes",
-    text: "Each lane is one role. The request moves from the left to the right.",
+    text: "Each lane is one role. The request moves from one lane to the next.",
     height: 400,
+    narrowHeight: 560,
+    turnsOnNarrow: true,
     spec: approvalSpec,
   },
   {
     title: "Retry loop",
     text: "A step that returns to an earlier step, drawn from the top down.",
     height: 460,
+    narrowHeight: 460,
+    turnsOnNarrow: false,
     spec: retrySpec,
   },
 ];
 
 // Each diagram keeps its own selection, because the page shows three diagrams.
-const DemoDiagram: FC<(typeof demos)[number]> = ({ title, text, height, spec }) => {
+const DemoDiagram: FC<DemoItem & { narrow: boolean }> = ({
+  title,
+  text,
+  height: wideHeight,
+  narrowHeight,
+  turnsOnNarrow,
+  spec: baseSpec,
+  narrow,
+}) => {
+  const turned = narrow && turnsOnNarrow;
+  // A new object makes the diagram run the layout again, so keep it stable.
+  const spec = useMemo<DiagramSpec>(
+    () => (turned ? { ...baseSpec, direction: "DOWN" } : baseSpec),
+    [baseSpec, turned],
+  );
+  const height = turned ? narrowHeight : wideHeight;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = spec.nodes.find((node) => node.id === selectedId);
 
@@ -232,12 +268,15 @@ const DemoDiagram: FC<(typeof demos)[number]> = ({ title, text, height, spec }) 
   );
 };
 
-const Demo: FC = () => (
-  <div className="flex min-w-0 flex-col gap-8">
-    {demos.map((demo) => (
-      <DemoDiagram key={demo.title} {...demo} />
-    ))}
-  </div>
-);
+const Demo: FC = () => {
+  const narrow = useMediaQuery(NARROW);
+  return (
+    <div className="flex min-w-0 flex-col gap-8">
+      {demos.map((demo) => (
+        <DemoDiagram key={demo.title} {...demo} narrow={narrow} />
+      ))}
+    </div>
+  );
+};
 
 export default Demo;

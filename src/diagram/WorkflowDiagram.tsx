@@ -24,6 +24,7 @@ export interface WorkflowDiagramProps {
 // Defined outside the component, so React Flow gets the same objects on each render.
 const nodeTypes = { step: Node, lane: Lane };
 const edgeTypes = { flow: FlowEdgeView };
+const MIN_ZOOM = 0.7;
 
 // The result belongs to one spec. A result for an older spec is never drawn.
 type Outcome = { spec: DiagramSpec; layout: LayoutResult } | { spec: DiagramSpec; error: string };
@@ -212,7 +213,9 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
         edgesFocusable={false}
         elementsSelectable={false}
         className="archify-diagram"
-        minZoom={0.25}
+        // Below this zoom the text is too small to read. A wide diagram is panned inside the canvas.
+        minZoom={MIN_ZOOM}
+        fitViewOptions={{ minZoom: MIN_ZOOM }}
         zoomOnScroll={false}
         preventScrolling={false}
         fitView

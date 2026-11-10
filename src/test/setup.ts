@@ -1,8 +1,11 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
 afterEach(() => cleanup());
+
+// The layout loads ELK with a dynamic import, which can take longer than one second under load.
+configure({ asyncUtilTimeout: 5000 });
 
 class MockResizeObserver {
   observe = vi.fn();

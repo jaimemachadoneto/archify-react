@@ -28,8 +28,36 @@ async function openDemo(page: Page): Promise<void> {
       await expect(nodesOf(page, title).filter({ hasText: label })).toHaveCount(1);
     }
   }
-  // fitView runs after the first measure. Wait until the viewport transform is stable.
-  await page.waitForTimeout(400);
+  // fitView runs after the first measure. Wait until no viewport transform changes between two polls.
+  let previous = "";
+  await expect
+    .poll(
+      async () => {
+        const now = await page.evaluate(() =>
+          Array.from(document.querySelectorAll<HTMLElement>(".react-flow__viewport"))
+            .map((viewport) => viewport.style.transform)
+            .join("|"),
+        );
+        const stable = now === previous;
+        previous = now;
+        return stable;
+      },
+      { intervals: [100], timeout: 10_000 },
+    )
+    .toBe(true);
+}
+
+// Move the keyboard focus from the theme button to the first node button with the Tab key.
+async function tabToNode(page: Page): Promise<void> {
+  await page.getByRole("button", { name: /theme/i }).focus();
+  let onNode = false;
+  for (let i = 0; i < 12 && !onNode; i++) {
+    await page.keyboard.press("Tab");
+    onNode = await page.evaluate(
+      () => document.activeElement?.classList.contains("archify-node") ?? false,
+    );
+  }
+  expect(onNode, "Tab must reach a node button").toBe(true);
 }
 
 test.describe("the demo page", () => {
@@ -93,14 +121,21 @@ test.describe("the demo page", () => {
     }
   });
 
-  test("does not move a node when the mouse drags it", async ({ page }) => {
-    await openDemo(page);
-    for (const { title } of diagrams) {
+  for (const { title } of diagrams) {
+    test(`does not move a node when the mouse drags it: ${title}`, async ({ page }) => {
+      await openDemo(page);
       const node = nodesOf(page, title).first();
+      // The mouse events go to the window, so the node must be inside it before the drag.
+      await node.scrollIntoViewIfNeeded();
       const before = await node.boundingBox();
       expect(before).not.toBeNull();
       const x = before!.x + before!.width / 2;
       const y = before!.y + before!.height / 2;
+      const viewport = page.viewportSize()!;
+      expect(x, "drag start x inside the window").toBeGreaterThan(0);
+      expect(x + 80, "drag end x inside the window").toBeLessThan(viewport.width);
+      expect(y, "drag start y inside the window").toBeGreaterThan(0);
+      expect(y + 40, "drag end y inside the window").toBeLessThan(viewport.height);
       await page.mouse.move(x, y);
       await page.mouse.down();
       await page.mouse.move(x + 40, y + 20, { steps: 5 });
@@ -109,8 +144,8 @@ test.describe("the demo page", () => {
       const after = await node.boundingBox();
       expect(after?.x, `${title}: x`).toBeCloseTo(before!.x, 1);
       expect(after?.y, `${title}: y`).toBeCloseTo(before!.y, 1);
-    }
-  });
+    });
+  }
 
   test("keeps the page scrollable with the wheel over a diagram", async ({ page }) => {
     await openDemo(page);
@@ -156,15 +191,7 @@ test.describe("the demo page", () => {
 
   test("selects a focused node with the Enter key and shows a focus ring", async ({ page }) => {
     await openDemo(page);
-    await page.getByRole("button", { name: /theme/i }).focus();
-    let onNode = false;
-    for (let i = 0; i < 12 && !onNode; i++) {
-      await page.keyboard.press("Tab");
-      onNode = await page.evaluate(
-        () => document.activeElement?.classList.contains("archify-node") ?? false,
-      );
-    }
-    expect(onNode, "Tab must reach a node button").toBe(true);
+    await tabToNode(page);
     const focused = page.locator("button.archify-node:focus");
     const outline = await focused.evaluate((el) => {
       const style = getComputedStyle(el);
@@ -207,6 +234,78 @@ test.describe("the demo page", () => {
   });
 });
 
+test.describe("the states of a node", () => {
+  // Each screenshot shows one state in the Decision trace. The ui-reviewer reads them.
+  test("takes a screenshot of the focus, selected, hover and failed states", async ({
+    page,
+  }, testInfo) => {
+    await openDemo(page);
+    const title = "Decision trace";
+    const group = diagram(page, title);
+    const shot = (name: string) =>
+      group.screenshot({ path: `test-results/review/${testInfo.project.name}-state-${name}.png` });
+    const blur = () => page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+
+    // Focus with the keyboard: the ring and the highlighted path.
+    await tabToNode(page);
+    await expect(page.locator("button.archify-node:focus")).toBeVisible();
+    await shot("focus");
+    await blur();
+
+    // Selected: no pointer and no focus, so only the selected style shows.
+    await nodesOf(page, title).filter({ hasText: "Classify intent" }).click();
+    await blur();
+    await page.mouse.move(2, 2);
+    await expect(group.locator("[data-dimmed]")).toHaveCount(0);
+    await shot("selected");
+
+    // Hover: the path of the node is clear and the rest is dimmed.
+    await nodesOf(page, title).filter({ hasText: "Search sources" }).hover();
+    await expect(group.locator("button.archify-node[data-dimmed]").first()).toBeVisible();
+    await shot("hover");
+
+    // A selected failed node, and a selected skipped node.
+    await nodesOf(page, title).filter({ hasText: "Check facts" }).click();
+    await blur();
+    await page.mouse.move(2, 2);
+    await expect(group.locator("[data-dimmed]")).toHaveCount(0);
+    await shot("selected-failed");
+
+    await nodesOf(page, title).filter({ hasText: "Check cache" }).click();
+    await blur();
+    await page.mouse.move(2, 2);
+    await shot("selected-skipped");
+  });
+
+  test("keeps a selected failed node different from a failed node and from a selected node", async ({
+    page,
+  }) => {
+    await openDemo(page);
+    const failed = nodesOf(page, "Decision trace").filter({ hasText: "Check facts" });
+    const look = () =>
+      failed.evaluate((el) => {
+        const style = getComputedStyle(el);
+        return { shadow: style.boxShadow, weight: style.fontWeight, border: style.borderTopColor };
+      });
+    const plain = await look();
+    await failed.click();
+    await page.mouse.move(2, 2);
+    const selected = await look();
+    // The failed signal stays (same border colour), and a selected signal is added that is not a colour only.
+    expect(selected.border).toBe(plain.border);
+    expect(selected.shadow).not.toBe(plain.shadow);
+    expect(Number(selected.weight)).toBeGreaterThan(Number(plain.weight));
+
+    const skipped = nodesOf(page, "Decision trace").filter({ hasText: "Check cache" });
+    const skippedPlain = Number(await skipped.evaluate((el) => getComputedStyle(el).fontWeight));
+    await skipped.click();
+    await page.mouse.move(2, 2);
+    const skippedSelected = Number(await skipped.evaluate((el) => getComputedStyle(el).fontWeight));
+    expect(skippedSelected).toBeGreaterThan(skippedPlain);
+    expect(skippedSelected).toBeGreaterThanOrEqual(700);
+  });
+});
+
 test.describe("at phone width", () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
@@ -217,6 +316,29 @@ test.describe("at phone width", () => {
       document.documentElement.clientWidth,
     ]);
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+  });
+
+  test("keeps the text of every node readable", async ({ page }) => {
+    await openDemo(page);
+    for (const { title } of diagrams) {
+      const sizes = await nodesOf(page, title).evaluateAll((buttons) =>
+        buttons.map((b) => {
+          const rect = b.getBoundingClientRect();
+          // The zoom of the diagram is the rendered height divided by the layout height.
+          const zoom = rect.height / (b as HTMLElement).offsetHeight;
+          return {
+            name: b.textContent ?? "",
+            height: rect.height,
+            font: parseFloat(getComputedStyle(b).fontSize) * zoom,
+          };
+        }),
+      );
+      expect(sizes.length, `${title}: node buttons`).toBeGreaterThanOrEqual(4);
+      for (const size of sizes) {
+        expect(size.height, `${title}: height of "${size.name}"`).toBeGreaterThanOrEqual(24);
+        expect(size.font, `${title}: font size of "${size.name}"`).toBeGreaterThanOrEqual(9);
+      }
+    }
   });
 
   test("shows every diagram inside the window", async ({ page }, testInfo) => {
