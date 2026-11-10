@@ -262,11 +262,19 @@ describe("WorkflowDiagram", () => {
       expect(container.querySelector(".archify-edge-dot")).not.toHaveAttribute("data-dimmed");
     });
 
-    it("never dims a lane label", async () => {
-      const { container } = draw(laneSpec);
+    it("never dims a lane label, also when it dims a node of the lane", async () => {
+      // gamma has no path to or from alpha, so it is outside the reach of alpha.
+      const spec: DiagramSpec = {
+        ...laneSpec,
+        nodes: [...laneSpec.nodes, { id: "gamma", label: "Gamma", lane: "ops" }],
+      };
+      const { container } = draw(spec);
       await userEvent.hover(await node("Alpha"));
-      expect(container.querySelector(".archify-lane")).not.toHaveAttribute("data-dimmed");
+      // This proves that the dimming runs in this fixture.
+      expect(await node("Gamma")).toHaveAttribute("data-dimmed", "true");
       expect(await node("Beta")).not.toHaveAttribute("data-dimmed");
+      expect(container.querySelector(".archify-lane")).not.toHaveAttribute("data-dimmed");
+      expect(container.querySelector('[data-id="lane:ops"]')).not.toHaveAttribute("data-dimmed");
     });
 
     it("leaves no data-dimmed attribute after the pointer leaves", async () => {
