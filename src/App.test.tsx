@@ -17,7 +17,11 @@ describe("App", () => {
   it("shows three diagrams, each with a title", async () => {
     render(<App />);
     const titles = ["Decision trace", "Approval with lanes", "Retry loop"];
-    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(titles);
+    // The playground has the fourth heading.
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
+      ...titles,
+      "Playground",
+    ]);
     for (const title of titles) {
       const group = screen.getByRole("group", { name: title });
       expect((await within(group).findAllByRole("button")).length).toBeGreaterThanOrEqual(4);

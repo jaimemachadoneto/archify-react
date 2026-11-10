@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import WorkflowDiagram from "@/diagram/WorkflowDiagram";
 import type { DiagramSpec } from "@/diagram/spec";
 import { useMediaQuery } from "@/diagram/useMediaQuery";
+import Playground from "./Playground";
 
 // The demo text is invented and generic. Each id is unique in the whole page.
 
@@ -268,6 +269,7 @@ const Demo: FC = () => {
       {demos.map((demo) => (
         <DemoDiagram key={demo.title} {...demo} narrow={narrow} />
       ))}
+      <Playground />
     </div>
   );
 };

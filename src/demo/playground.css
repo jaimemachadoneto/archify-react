@@ -1,0 +1,55 @@
+/*
+ * The look "Custom palette". The rules must name .archify-diagram, because the stylesheet of the
+ * library sets the private variables on that element, and a variable on a parent does not win.
+ */
+.playground--custom .archify-diagram,
+.playground--custom .archify-alert {
+  --archify-danger: #e11d48;
+  --archify-radius: 16px;
+  --archify-card: #ecfeff;
+  --archify-card-fg: #164e63;
+  --archify-border: #0891b2;
+  --archify-bg: #f0fdfa;
+  --archify-fg: #134e4a;
+  --archify-muted: #cffafe;
+  --archify-muted-fg: #0e7490;
+  --archify-accent: #a5f3fc;
+  --archify-accent-fg: #164e63;
+  --archify-ring: #0891b2;
+  --archify-input: #67e8f9;
+}
+
+/* The same palette in the dark theme, for the class on <html> and for the system preference. */
+.dark .playground--custom .archify-diagram,
+.dark .playground--custom .archify-alert {
+  --archify-danger: #fb7185;
+  --archify-card: #083344;
+  --archify-card-fg: #cffafe;
+  --archify-border: #22d3ee;
+  --archify-bg: #042f2e;
+  --archify-fg: #ccfbf1;
+  --archify-muted: #0c4a6e;
+  --archify-muted-fg: #67e8f9;
+  --archify-accent: #155e75;
+  --archify-accent-fg: #ecfeff;
+  --archify-ring: #22d3ee;
+  --archify-input: #155e75;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) .playground--custom .archify-diagram,
+  :root:not(.light) .playground--custom .archify-alert {
+    --archify-danger: #fb7185;
+    --archify-card: #083344;
+    --archify-card-fg: #cffafe;
+    --archify-border: #22d3ee;
+    --archify-bg: #042f2e;
+    --archify-fg: #ccfbf1;
+    --archify-muted: #0c4a6e;
+    --archify-muted-fg: #67e8f9;
+    --archify-accent: #155e75;
+    --archify-accent-fg: #ecfeff;
+    --archify-ring: #22d3ee;
+    --archify-input: #155e75;
+  }
+}
