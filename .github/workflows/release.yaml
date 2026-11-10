@@ -1,0 +1,47 @@
+# A pushed vX.Y.Z tag packs the library and creates the GitHub release.
+# Start a release with `deploy patch|minor|major` in the project shell.
+name: release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 12
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # The tag and the version in package.json must agree, or the tarball
+      # would carry a name that the release does not.
+      - name: Check the tag against the version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -eu
+          version="$(node -p "require('./package.json').version")"
+          [ "v$version" = "$TAG" ] || { echo "The tag $TAG does not match the version $version." >&2; exit 1; }
+
+      - run: pnpm test
+      - run: pnpm pack
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -eu
+          gh release create "$TAG" "archify-react-${TAG#v}.tgz" \
+            --title "archify-react ${TAG#v}" \
+            --generate-notes

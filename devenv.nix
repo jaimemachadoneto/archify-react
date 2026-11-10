@@ -11,6 +11,10 @@
   # `git commit` runs these first, whatever made the change.
   base.preCommit = [ "lint" ];
 
+  # `deploy patch|minor|major` writes the version, tags `main` and pushes the tag.
+  # The release workflow then packs the library and creates the GitHub release.
+  base.release.enable = true;
+
   # The node stack gives nodejs-slim to a pnpm project, and it has no npx.
   packages = with pkgs; [ nodejs ];
 }

@@ -4,6 +4,21 @@
   "version": "0.1.0",
   "description": "Draw a workflow diagram in a React app.",
   "license": "MIT",
+  "author": "Jaime Machado",
+  "homepage": "https://jaimemachadoneto.github.io/archify-react/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaimemachadoneto/archify-react.git"
+  },
+  "bugs": "https://github.com/jaimemachadoneto/archify-react/issues",
+  "keywords": [
+    "react",
+    "diagram",
+    "workflow",
+    "flowchart",
+    "react-flow",
+    "elk"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
