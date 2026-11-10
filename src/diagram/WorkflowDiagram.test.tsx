@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WorkflowDiagram from "./WorkflowDiagram";
 import type { DiagramSpec } from "./spec";
@@ -174,8 +174,10 @@ describe("WorkflowDiagram", () => {
       />,
     );
     expect(await screen.findByText("Operations lane")).toBeInTheDocument();
-    resolveFirst(staleResult);
-    await Promise.resolve();
+    // act() flushes the state update that a stale result would cause.
+    await act(async () => {
+      resolveFirst(staleResult);
+    });
     expect(screen.getByText("Operations lane")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
