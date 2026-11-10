@@ -1,10 +1,11 @@
 /*
- * The look "Custom palette". The rules must name .archify-diagram, because the stylesheet of the
- * library sets the private variables on that element, and a variable on a parent does not win.
+ * The look "Custom palette". The rules must name .archify-diagram.
+ * The stylesheet of the library sets the private variables on that element, so a variable on a parent does not win.
+ * Each colour pair has a contrast of at least 4.5 to 1 for text and 3 to 1 for a border, in both themes.
  */
 .playground--custom .archify-diagram,
 .playground--custom .archify-alert {
-  --archify-danger: #e11d48;
+  --archify-danger: #be123c;
   --archify-radius: 16px;
   --archify-card: #ecfeff;
   --archify-card-fg: #164e63;
@@ -12,17 +13,17 @@
   --archify-bg: #f0fdfa;
   --archify-fg: #134e4a;
   --archify-muted: #cffafe;
-  --archify-muted-fg: #0e7490;
+  --archify-muted-fg: #0b6178;
   --archify-accent: #a5f3fc;
   --archify-accent-fg: #164e63;
   --archify-ring: #0891b2;
   --archify-input: #67e8f9;
 }
 
-/* The same palette in the dark theme, for the class on <html> and for the system preference. */
+/* The same palette in the dark theme: the class on <html>, or the system preference when no class is set. */
 .dark .playground--custom .archify-diagram,
 .dark .playground--custom .archify-alert {
-  --archify-danger: #fb7185;
+  --archify-danger: #fda4af;
   --archify-card: #083344;
   --archify-card-fg: #cffafe;
   --archify-border: #22d3ee;
@@ -30,7 +31,7 @@
   --archify-fg: #ccfbf1;
   --archify-muted: #0c4a6e;
   --archify-muted-fg: #67e8f9;
-  --archify-accent: #155e75;
+  --archify-accent: #0e4a5e;
   --archify-accent-fg: #ecfeff;
   --archify-ring: #22d3ee;
   --archify-input: #155e75;
@@ -39,7 +40,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not(.light) .playground--custom .archify-diagram,
   :root:not(.light) .playground--custom .archify-alert {
-    --archify-danger: #fb7185;
+    --archify-danger: #fda4af;
     --archify-card: #083344;
     --archify-card-fg: #cffafe;
     --archify-border: #22d3ee;
@@ -47,7 +48,7 @@
     --archify-fg: #ccfbf1;
     --archify-muted: #0c4a6e;
     --archify-muted-fg: #67e8f9;
-    --archify-accent: #155e75;
+    --archify-accent: #0e4a5e;
     --archify-accent-fg: #ecfeff;
     --archify-ring: #22d3ee;
     --archify-input: #155e75;

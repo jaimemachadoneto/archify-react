@@ -14,7 +14,7 @@ describe("App", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Workflow diagrams");
   });
 
-  it("shows three diagrams, each with a title", async () => {
+  it("shows three diagrams and the playground, each with a title", async () => {
     render(<App />);
     const titles = ["Decision trace", "Approval with lanes", "Retry loop"];
     // The playground has the fourth heading.

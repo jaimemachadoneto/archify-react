@@ -55,7 +55,7 @@ test.describe("the playground", () => {
     await expect(alert).toContainText("The diagram spec is not valid.");
     await expect(alert).toContainText("occurs more than once");
     await expect(alert).toContainText('unknown target node "ship"');
-    // The playground draws no alert of its own.
+    // The playground draws no alert of its own while the JSON is valid.
     await expect(page.getByRole("alert")).toHaveCount(1);
   });
 
@@ -78,6 +78,12 @@ test.describe("the playground", () => {
     await answer.hover();
     await expect(answer).toBeVisible();
     await expect(diagram(page).locator("[data-dimmed]")).toHaveCount(0);
+
+    // A positive control: with Highlight on again, the same hover dims, so the check above is not empty.
+    await page.mouse.move(2, 2);
+    await page.getByRole("checkbox", { name: "Highlight" }).check();
+    await answer.hover();
+    await expect(diagram(page).locator("button.archify-node[data-dimmed]").first()).toBeVisible();
   });
 
   test("changes --archify-radius when the look is Custom palette", async ({ page }) => {
@@ -90,8 +96,51 @@ test.describe("the playground", () => {
     await page.getByRole("combobox", { name: "Look" }).selectOption({ label: "Custom palette" });
     await expect.poll(radius).toBe("16px");
     expect(host).not.toBe("16px");
-    await page.getByRole("combobox", { name: "Look" }).selectOption({ label: "Host tokens" });
+    await page.getByRole("combobox", { name: "Look" }).selectOption({ label: "Host variables" });
     await expect.poll(radius).toBe(host);
+  });
+
+  test("uses a palette of its own in each theme", async ({ page }, testInfo) => {
+    await openPlayground(page);
+    await page.getByRole("combobox", { name: "Look" }).selectOption({ label: "Custom palette" });
+    const card = () =>
+      diagram(page)
+        .locator(".archify-diagram")
+        .evaluate((el) => getComputedStyle(el).getPropertyValue("--archify-card").trim());
+    // The project name is the colour scheme of the browser, so a missing dark block fails here.
+    await expect.poll(card).toBe(testInfo.project.name === "dark" ? "#083344" : "#ecfeff");
+  });
+
+  test("shows the whole diagram inside its frame on a phone, also after a change", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 400, height: 900 });
+    await openPlayground(page);
+    // The diagram starts from the top down on a phone. RIGHT is wider than the window, because the zoom has a minimum.
+    await expect(page.getByRole("radio", { name: "DOWN" })).toBeChecked();
+    const allInside = async () => {
+      const frame = await diagram(page).locator(".archify-diagram").boundingBox();
+      const boxes = await nodes(page).evaluateAll((buttons) =>
+        buttons.map((b) => b.getBoundingClientRect().toJSON()),
+      );
+      return boxes.every(
+        (b) =>
+          b.left >= frame!.x - 1 &&
+          b.right <= frame!.x + frame!.width + 1 &&
+          b.top >= frame!.y - 1 &&
+          b.bottom <= frame!.y + frame!.height + 1,
+      );
+    };
+    await expect
+      .poll(allInside, { message: "every step is inside the frame at the start" })
+      .toBe(true);
+    await page
+      .getByRole("combobox", { name: "Spec preset" })
+      .selectOption({ label: "Pinned positions" });
+    await expect(diagram(page)).not.toHaveAttribute("aria-busy", "true");
+    await expect
+      .poll(allInside, { message: "every step is inside the frame after a preset" })
+      .toBe(true);
   });
 
   test("fits a phone window with no sideways scroll", async ({ page }) => {
