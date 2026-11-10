@@ -99,7 +99,8 @@ const FlowEdgeView: FC<EdgeProps<DiagramFlowEdge>> = ({
           data-state={state}
         />
         {showDot && (
-          <circle r="4" className="archify-edge-dot">
+          // The key is the path: a running SMIL animation keeps its old path until the next loop, so a new path needs a new dot.
+          <circle key={path} r="4" className="archify-edge-dot">
             <animateMotion dur="2s" repeatCount="indefinite" path={path} />
           </circle>
         )}

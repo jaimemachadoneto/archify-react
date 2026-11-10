@@ -1,5 +1,5 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import WorkflowDiagram from "./WorkflowDiagram";
 import type { DiagramEdge, DiagramSpec } from "./spec";
 import { layoutDiagram } from "./layout";
@@ -90,7 +90,8 @@ describe("reduced motion", () => {
     const container = await draw(specWith({ animated: true }));
     expect(container.querySelectorAll("animateMotion")).toHaveLength(1);
     act(() => motion.change(true));
-    expect(container.querySelectorAll("animateMotion")).toHaveLength(0);
+    // This test failed about 1 run in 10 when it read the DOM at once, so it waits for the change.
+    await waitFor(() => expect(container.querySelectorAll("animateMotion")).toHaveLength(0));
   });
 
   it("removes the media query listener when the diagram unmounts", async () => {
@@ -136,6 +137,23 @@ describe("animated edge", () => {
     expect(motion?.getAttribute("path")).toBe(path);
     expect(motion?.parentElement?.tagName.toLowerCase()).toBe("circle");
     expect(motion?.parentElement).toHaveClass("archify-edge-dot");
+  });
+
+  it("starts a new dot when the layout changes the path, so the dot never runs along an old path", async () => {
+    const base = specWith({ animated: true });
+    const props = { selectedId: null, onSelect: () => {}, height: 400, ariaLabel: "Trace" };
+    const view = render(<WorkflowDiagram spec={base} {...props} />);
+    await screen.findByRole("button", { name: /Beta/ });
+    const dotBefore = view.container.querySelector(".archify-edge-dot");
+    const pathBefore = view.container.querySelector(".archify-edge")?.getAttribute("d");
+
+    view.rerender(<WorkflowDiagram spec={{ ...base, direction: "DOWN" }} {...props} />);
+    await waitFor(() =>
+      expect(view.container.querySelector(".archify-edge")?.getAttribute("d")).not.toBe(pathBefore),
+    );
+
+    // A running SMIL animation keeps its old path when the attribute changes, so the circle must be new.
+    expect(view.container.querySelector(".archify-edge-dot")).not.toBe(dotBefore);
   });
 
   it("has no animateMotion element when animated is not set", async () => {
