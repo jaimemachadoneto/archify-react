@@ -1,0 +1,4 @@
+# The shared design files this project uses: <file in devbase design/dist> <path here>.
+# Refresh them with `base design sync archify-react`, then commit them.
+tokens.css src/styles/tokens.css
+theme.css src/styles/theme.css

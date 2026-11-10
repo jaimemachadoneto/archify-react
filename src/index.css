@@ -1,0 +1,14 @@
+@import "tailwindcss";
+/* The shared design: colours, radius and fonts from devbase design/tokens.json.
+   Do not edit these two files here. Run `base design sync archify-react` instead. */
+@import "./styles/tokens.css";
+@import "./styles/theme.css";
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
