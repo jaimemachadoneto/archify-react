@@ -10,7 +10,7 @@ import Lane, { type LaneFlowNode } from "./components/Lane";
 import FlowEdgeView, { type DiagramFlowEdge } from "./components/FlowEdge";
 
 export interface WorkflowDiagramProps {
-  // The component runs the layout again when this object changes, so keep it stable (for example with useMemo).
+  // A new object with the same content does not run the layout again.
   spec: DiagramSpec;
   selectedId: string | null;
   // Pass a stable function (for example a state setter), or the component rebuilds the step nodes on each render.
@@ -26,8 +26,20 @@ const nodeTypes = { step: Node, lane: Lane };
 const edgeTypes = { flow: FlowEdgeView };
 const MIN_ZOOM = 0.7;
 
-// The result belongs to one spec. A result for an older spec is never drawn.
-type Outcome = { spec: DiagramSpec; layout: LayoutResult } | { spec: DiagramSpec; error: string };
+// Only these fields change the layout. A change to another field redraws without ELK.
+function layoutKeyOf(spec: DiagramSpec): string {
+  return JSON.stringify([
+    spec.direction ?? "RIGHT",
+    (spec.lanes ?? []).map((lane) => [lane.id, lane.label]),
+    spec.nodes.map((node) => [node.id, node.label, node.lane, node.position?.x, node.position?.y]),
+    spec.edges.map((edge) => [edge.id, edge.source, edge.target, edge.label]),
+  ]);
+}
+
+// A result belongs to one layout key. The last result stays on screen until the next one arrives.
+type Outcome =
+  | { key: string; spec: DiagramSpec; layout: LayoutResult }
+  | { key: string; spec: DiagramSpec; error: string };
 
 const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
   spec,
@@ -38,38 +50,45 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
   highlight = true,
 }) => {
   const problems = useMemo(() => validateSpec(spec), [spec]);
+  const valid = problems.length === 0;
+  const layoutKey = useMemo(() => (valid ? layoutKeyOf(spec) : null), [spec, valid]);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [lastLayout, setLastLayout] = useState<{ spec: DiagramSpec; layout: LayoutResult } | null>(
+    null,
+  );
 
   useEffect(() => {
-    if (problems.length > 0) return;
+    if (layoutKey === null) return;
     let cancelled = false;
     layoutDiagram(spec).then(
       (layout) => {
-        if (!cancelled) setOutcome({ spec, layout });
+        if (cancelled) return;
+        setOutcome({ key: layoutKey, spec, layout });
+        setLastLayout({ spec, layout });
       },
       (error: unknown) => {
-        if (!cancelled) {
-          setOutcome({ spec, error: error instanceof Error ? error.message : String(error) });
-        }
+        if (cancelled) return;
+        console.error("archify-react: layout failed", error);
+        const message = error instanceof Error ? error.message : String(error);
+        setOutcome({ key: layoutKey, spec, error: message });
       },
     );
     return () => {
       cancelled = true;
     };
-  }, [spec, problems]);
+    // The key holds every field of the spec that the layout reads.
+  }, [layoutKey]);
 
-  const current = outcome?.spec === spec ? outcome : null;
-  const layout = current && "layout" in current ? current.layout : null;
+  const current = outcome?.key === layoutKey ? outcome : null;
+  const pending = valid && current === null;
+  const failed = current !== null && "error" in current ? current.error : null;
+  const shown = failed === null ? lastLayout : null;
+  const layout = shown?.layout ?? null;
 
-  // One source of truth for the active node: the node under the pointer or with focus.
   const [activeId, setActiveId] = useState<string | null>(null);
-  // A new spec can unmount the node that was active, and then no leave event comes.
-  // React allows this reset during the render, and it avoids a frame with a stale dimming.
-  const [activeSpec, setActiveSpec] = useState(spec);
-  if (activeSpec !== spec) {
-    setActiveSpec(spec);
-    setActiveId(null);
-  }
+  // A new spec can remove the active node, and then no leave event comes.
+  const activeGone = activeId !== null && valid && !spec.nodes.some((n) => n.id === activeId);
+  if (activeGone) setActiveId(null);
   const onActivate = useCallback((id: string) => setActiveId(id), []);
   // A leave or a blur from an older node must not clear a newer active node.
   const onDeactivate = useCallback(
@@ -77,16 +96,27 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
     [],
   );
 
-  // The ids on the path of the active node, or null when nothing is highlighted.
-  // The active node can be missing after the spec changes: then nothing is dimmed.
-  const onPath = useMemo(() => {
-    if (!highlight || activeId === null || !spec.nodes.some((n) => n.id === activeId)) return null;
-    return new Set([...reach(spec, activeId, "upstream"), ...reach(spec, activeId, "downstream")]);
-  }, [highlight, activeId, spec]);
+  // Two sets, so that an edge that goes around the active node is not on the path.
+  const path = useMemo(() => {
+    if (!highlight || !valid || activeId === null || activeGone) return null;
+    return {
+      up: new Set(reach(spec, activeId, "upstream")),
+      down: new Set(reach(spec, activeId, "downstream")),
+    };
+  }, [highlight, valid, activeId, activeGone, spec]);
+
+  const specNodes = useMemo(
+    () => new Map(valid ? spec.nodes.map((node) => [node.id, node]) : []),
+    [spec, valid],
+  );
+  const specEdges = useMemo(
+    () => new Map(valid ? spec.edges.map((edge) => [edge.id, edge]) : []),
+    [spec, valid],
+  );
 
   const laneNodes = useMemo<LaneFlowNode[]>(() => {
     if (!layout) return [];
-    const laneLabels = new Map(spec.lanes?.map((lane) => [lane.id, lane.label]));
+    const laneLabels = new Map((valid ? (spec.lanes ?? []) : []).map((l) => [l.id, l.label]));
     return layout.lanes.map((lane) => ({
       id: `lane:${lane.id}`,
       type: "lane",
@@ -100,72 +130,82 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
       focusable: false,
       style: { pointerEvents: "none" },
     }));
-  }, [layout, spec]);
+  }, [layout, spec, valid]);
 
+  const vertical = shown?.spec.direction === "DOWN";
   const stepNodes = useMemo<DiagramFlowNode[]>(() => {
     if (!layout) return [];
-    const vertical = spec.direction === "DOWN";
     const sourcePosition = vertical ? Position.Bottom : Position.Right;
     const targetPosition = vertical ? Position.Top : Position.Left;
-    return layout.nodes.map((node) => ({
-      id: node.id,
-      type: "step",
-      data: {
-        label: node.label,
-        state: node.state,
-        selected: selectedId === node.id,
-        onSelect,
-        dimmed: onPath !== null && !onPath.has(node.id),
-        onActivate,
-        onDeactivate,
-      },
-      position: { x: node.x, y: node.y },
-      width: node.width,
-      height: node.height,
-      sourcePosition,
-      targetPosition,
-      // React Flow sets pointer-events none on a node that is not selectable. The button must stay a target.
-      style: { pointerEvents: "all" },
-      // React Flow measures the handles in a browser. These boxes keep the edges
-      // drawn where no layout engine exists, such as in a test.
-      handles: [
-        {
-          type: "target",
-          position: targetPosition,
-          x: vertical ? node.width / 2 : 0,
-          y: vertical ? 0 : node.height / 2,
-          width: 1,
-          height: 1,
+    return layout.nodes.map((placed) => {
+      const node = specNodes.get(placed.id) ?? placed;
+      return {
+        id: placed.id,
+        type: "step",
+        data: {
+          label: node.label,
+          kind: node.kind ?? "step",
+          state: node.state,
+          selected: selectedId === placed.id,
+          onSelect,
+          dimmed: path !== null && !path.up.has(placed.id) && !path.down.has(placed.id),
+          onActivate,
+          onDeactivate,
         },
-        {
-          type: "source",
-          position: sourcePosition,
-          x: vertical ? node.width / 2 : node.width,
-          y: vertical ? node.height : node.height / 2,
-          width: 1,
-          height: 1,
-        },
-      ],
-    }));
-  }, [layout, spec, selectedId, onPath, onSelect, onActivate, onDeactivate]);
+        position: { x: placed.x, y: placed.y },
+        width: placed.width,
+        height: placed.height,
+        sourcePosition,
+        targetPosition,
+        // React Flow sets pointer-events none on a node that is not selectable. The button must stay a target.
+        style: { pointerEvents: "all" },
+        // jsdom cannot measure the handles, so these boxes let a test draw the edges.
+        handles: [
+          {
+            type: "target",
+            position: targetPosition,
+            x: vertical ? placed.width / 2 : 0,
+            y: vertical ? 0 : placed.height / 2,
+            width: 1,
+            height: 1,
+          },
+          {
+            type: "source",
+            position: sourcePosition,
+            x: vertical ? placed.width / 2 : placed.width,
+            y: vertical ? placed.height : placed.height / 2,
+            width: 1,
+            height: 1,
+          },
+        ],
+      };
+    });
+  }, [layout, vertical, specNodes, selectedId, path, onSelect, onActivate, onDeactivate]);
 
   const edges = useMemo<DiagramFlowEdge[]>(() => {
     if (!layout) return [];
-    return layout.edges.map((edge) => ({
-      id: edge.id,
-      type: "flow",
-      source: edge.source,
-      target: edge.target,
-      focusable: false,
-      data: {
-        label: edge.label,
-        state: edge.state,
-        animated: edge.animated ?? false,
-        sections: edge.sections,
-        dimmed: onPath !== null && !(onPath.has(edge.source) && onPath.has(edge.target)),
-      },
-    }));
-  }, [layout, onPath]);
+    const onPath = (source: string, target: string) =>
+      path === null ||
+      (path.up.has(source) && path.up.has(target)) ||
+      (path.down.has(source) && path.down.has(target));
+    return layout.edges.map((placed) => {
+      const edge = specEdges.get(placed.id) ?? placed;
+      return {
+        id: placed.id,
+        type: "flow",
+        source: placed.source,
+        target: placed.target,
+        focusable: false,
+        data: {
+          label: edge.label,
+          state: edge.state,
+          animated: edge.animated ?? false,
+          sections: placed.sections,
+          dimmed: !onPath(placed.source, placed.target),
+        },
+      };
+    });
+  }, [layout, specEdges, path]);
 
   const flowNodes = useMemo(() => [...laneNodes, ...stepNodes], [laneNodes, stepNodes]);
 
@@ -186,22 +226,25 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
     );
   }
 
-  if (current && "error" in current) {
+  if (failed !== null) {
     return (
       <div role="group" aria-label={ariaLabel} style={wrapper}>
         <div role="alert" className="archify-alert">
-          {current.error}
+          <p>The diagram layout failed.</p>
+          {failed}
         </div>
       </div>
     );
   }
 
+  const busy = pending ? true : undefined;
+
   if (!layout) {
-    return <div role="group" aria-label={ariaLabel} style={wrapper} />;
+    return <div role="group" aria-label={ariaLabel} aria-busy={busy} style={wrapper} />;
   }
 
   return (
-    <div role="group" aria-label={ariaLabel} style={wrapper}>
+    <div role="group" aria-label={ariaLabel} aria-busy={busy} style={wrapper}>
       <ReactFlow<DiagramFlowNode | LaneFlowNode, DiagramFlowEdge>
         nodes={flowNodes}
         edges={edges}

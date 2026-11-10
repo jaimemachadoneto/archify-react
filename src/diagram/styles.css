@@ -25,6 +25,7 @@
 /* Nodes */
 
 .archify-node {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -72,8 +73,49 @@
   outline-offset: 2px;
 }
 
+/* The box has a fixed size, so a long label stops after two lines. The title shows all of it. */
 .archify-node__label {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow-wrap: anywhere;
+}
+
+.archify-node:has(.archify-node__note) .archify-node__label {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+/* The kind of a node: a pill for a start or an end, a small diamond for a decision. */
+.archify-node[data-kind="start"],
+.archify-node[data-kind="end"] {
+  border-radius: 9999px;
+}
+
+.archify-node[data-kind="decision"] .archify-node__label::before {
+  content: "";
+  display: inline-block;
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  margin-right: 5px;
+  border: 1px solid currentColor;
+  transform: rotate(45deg);
+  vertical-align: 1px;
+}
+
+.archify-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .archify-node__note {

@@ -4,6 +4,7 @@ import type { DiagramNode } from "../spec";
 
 export type DiagramNodeData = {
   label: string;
+  kind: NonNullable<DiagramNode["kind"]>;
   state?: DiagramNode["state"];
   selected: boolean;
   onSelect: (id: string) => void;
@@ -23,7 +24,7 @@ const Node: FC<NodeProps<DiagramFlowNode>> = ({
   sourcePosition = Position.Right,
   targetPosition = Position.Left,
 }) => {
-  const { label, state, selected, onSelect, dimmed, onActivate, onDeactivate } = data;
+  const { label, kind, state, selected, onSelect, dimmed, onActivate, onDeactivate } = data;
 
   // "nopan" keeps a mouse drag on a node from panning the diagram: React Flow adds it only to a draggable node.
   const classes = ["archify-node", "nopan"];
@@ -44,6 +45,8 @@ const Node: FC<NodeProps<DiagramFlowNode>> = ({
         type="button"
         className={classes.join(" ")}
         data-state={state ?? "used"}
+        data-kind={kind}
+        title={label}
         aria-pressed={selected}
         // The attribute is absent, not "false", when the node is not dimmed.
         data-dimmed={dimmed ? "true" : undefined}
@@ -55,6 +58,7 @@ const Node: FC<NodeProps<DiagramFlowNode>> = ({
         onBlur={() => onDeactivate(id)}
       >
         <span className="archify-node__label">{label}</span>
+        {kind !== "step" && <span className="archify-sr-only">, {kind}</span>}
         {/* A caption says the state in words, so a colour is never the only sign. */}
         {state === "skipped" && <span className="archify-node__note">not used</span>}
         {state === "failed" && <span className="archify-node__note">failed</span>}

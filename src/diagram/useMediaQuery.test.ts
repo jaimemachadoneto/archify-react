@@ -1,4 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
+import { createElement } from "react";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useMediaQuery } from "./useMediaQuery";
 
@@ -38,5 +40,17 @@ describe("useMediaQuery", () => {
     expect(result.current).toBe(true);
     act(() => media.change(false));
     expect(result.current).toBe(false);
+  });
+
+  it("reads one media query list for two hooks with the same query", () => {
+    stubMatchMedia(false);
+    renderHook(() => [useMediaQuery("(max-width: 480px)"), useMediaQuery("(max-width: 480px)")]);
+    expect(window.matchMedia).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns false on the server", () => {
+    stubMatchMedia(true);
+    const Probe = () => String(useMediaQuery("(max-width: 480px)"));
+    expect(renderToString(createElement(Probe))).toBe("false");
   });
 });

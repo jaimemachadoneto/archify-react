@@ -193,12 +193,18 @@ describe("WorkflowDiagram", () => {
     expect(layoutDiagram).not.toHaveBeenCalled();
   });
 
-  it("shows an alert when the layout fails", async () => {
-    vi.mocked(layoutDiagram).mockRejectedValueOnce(new Error("ELK could not lay out the graph"));
+  it("shows an alert and logs the error when the layout fails", async () => {
+    const error = new Error("ELK could not lay out the graph");
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(layoutDiagram).mockRejectedValueOnce(error);
     draw(baseSpec);
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("ELK could not lay out the graph");
+    expect(alert).toHaveTextContent(
+      /^The diagram layout failed\.\s*ELK could not lay out the graph$/,
+    );
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(log).toHaveBeenCalledWith("archify-react: layout failed", error);
+    log.mockRestore();
   });
 
   it("ignores a layout result for a spec that the caller already replaced", async () => {
@@ -329,6 +335,30 @@ describe("WorkflowDiagram", () => {
       expect(dimmedNodes(container)).toEqual(["Node B"]);
     });
 
+    it("dims an edge that bypasses the active node", async () => {
+      const bypassSpec: DiagramSpec = {
+        version: 1,
+        nodes: [
+          { id: "a", label: "Node A" },
+          { id: "b", label: "Node B" },
+          { id: "c", label: "Node C" },
+          { id: "d", label: "Node D" },
+        ],
+        edges: [
+          { id: "ab", source: "a", target: "b" },
+          { id: "bd", source: "b", target: "d" },
+          { id: "ad", source: "a", target: "d" },
+          { id: "ac", source: "a", target: "c" },
+        ],
+      };
+      const { container } = draw(bypassSpec);
+      await userEvent.hover(await node("Node B"));
+      expect(edge(container, "ab")).not.toHaveAttribute("data-dimmed");
+      expect(edge(container, "bd")).not.toHaveAttribute("data-dimmed");
+      expect(edge(container, "ad")).toHaveAttribute("data-dimmed", "true");
+      expect(edge(container, "ac")).toHaveAttribute("data-dimmed", "true");
+    });
+
     it("finishes for a spec with a cycle", async () => {
       const { container } = draw(cycleSpec);
       await userEvent.hover(await node("Node B"));
@@ -365,22 +395,123 @@ describe("WorkflowDiagram", () => {
   });
 
   describe("a new spec object", () => {
-    it("clears the active node, also when the new spec keeps the same node ids", async () => {
-      const view = draw(forkSpec);
-      await userEvent.hover(await screen.findByRole("button", { name: /Node D/ }));
-      expect(view.container.querySelector("[data-dimmed]")).not.toBeNull();
+    const redraw = (view: ReturnType<typeof draw>, spec: DiagramSpec) =>
       view.rerender(
         <WorkflowDiagram
-          spec={{ ...forkSpec }}
+          spec={spec}
           selectedId={null}
           onSelect={() => {}}
           height={400}
           ariaLabel="Decision trace"
         />,
       );
-      await screen.findByRole("button", { name: /Node D/ });
-      expect(view.container.querySelector("[data-dimmed]")).toBeNull();
+
+    it("keeps the active node when the new spec has the same content", async () => {
+      const view = draw(forkSpec);
+      await userEvent.hover(await screen.findByRole("button", { name: /Node D/ }));
+      expect(view.container.querySelector("[data-dimmed]")).not.toBeNull();
+      redraw(view, structuredClone(forkSpec));
+      expect(view.container.querySelector("button[data-dimmed]")).not.toBeNull();
     });
+
+    it("keeps the node buttons and the focus, and does not lay out again", async () => {
+      const view = draw(forkSpec);
+      const b = await screen.findByRole("button", { name: /Node B/ });
+      act(() => b.focus());
+      redraw(view, structuredClone(forkSpec));
+      expect(screen.getByRole("button", { name: /Node B/ })).toBe(b);
+      expect(document.activeElement).toBe(b);
+      await act(async () => {});
+      expect(screen.getByRole("button", { name: /Node B/ })).toBe(b);
+      expect(layoutDiagram).toHaveBeenCalledTimes(1);
+    });
+
+    it("shows a new state at once and does not lay out again", async () => {
+      const view = draw(forkSpec);
+      await screen.findByRole("button", { name: /Node B/ });
+      const failed = structuredClone(forkSpec);
+      failed.nodes[1].state = "failed";
+      failed.edges[0].state = "skipped";
+      redraw(view, failed);
+      expect(screen.getByRole("button", { name: /Node B/ })).toHaveAttribute(
+        "data-state",
+        "failed",
+      );
+      expect(view.container.querySelector("path#ab")).toHaveAttribute("data-state", "skipped");
+      await act(async () => {});
+      expect(layoutDiagram).toHaveBeenCalledTimes(1);
+    });
+
+    it("lays out again for a new label and keeps the last layout until the new one arrives", async () => {
+      const view = draw(forkSpec);
+      await screen.findByRole("button", { name: /Node B/ });
+      const renamed = structuredClone(forkSpec);
+      renamed.nodes[1].label = "Node B2";
+      redraw(view, renamed);
+      expect(screen.getByRole("button", { name: /Node A/ })).toBeInTheDocument();
+      expect(await screen.findByRole("button", { name: /Node B2/ })).toBeInTheDocument();
+      expect(layoutDiagram).toHaveBeenCalledTimes(2);
+    });
+
+    it("lays out again for a new edge and draws it", async () => {
+      const view = draw(forkSpec);
+      await screen.findByRole("button", { name: /Node B/ });
+      const more = structuredClone(forkSpec);
+      more.edges.push({ id: "bd", source: "b", target: "d" });
+      redraw(view, more);
+      await vi.waitFor(() => expect(view.container.querySelector("path#bd")).not.toBeNull());
+      expect(layoutDiagram).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("the busy state", () => {
+    it("sets aria-busy on the group while the layout runs, and removes it after", async () => {
+      draw(baseSpec);
+      const group = screen.getByRole("group", { name: "Decision trace" });
+      expect(group).toHaveAttribute("aria-busy", "true");
+      await screen.findByRole("button", { name: /Beta/ });
+      expect(group).not.toHaveAttribute("aria-busy");
+    });
+  });
+
+  describe("the kind of a node", () => {
+    const kindSpec: DiagramSpec = {
+      version: 1,
+      nodes: [
+        { id: "start", label: "Begin", kind: "start" },
+        { id: "choose", label: "Choose", kind: "decision" },
+        { id: "work", label: "Work" },
+        { id: "end", label: "Finish", kind: "end" },
+      ],
+      edges: [],
+    };
+
+    it("sets data-kind on each node button, with step as the default", async () => {
+      draw(kindSpec);
+      expect(await screen.findByRole("button", { name: /Begin/ })).toHaveAttribute(
+        "data-kind",
+        "start",
+      );
+      expect(screen.getByRole("button", { name: /Choose/ })).toHaveAttribute(
+        "data-kind",
+        "decision",
+      );
+      expect(screen.getByRole("button", { name: /Work/ })).toHaveAttribute("data-kind", "step");
+      expect(screen.getByRole("button", { name: /Finish/ })).toHaveAttribute("data-kind", "end");
+    });
+
+    it("gives the kind in words to assistive technology, but not for a step", async () => {
+      draw(kindSpec);
+      expect(await screen.findByRole("button", { name: /Choose.*decision/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Begin.*start/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Finish.*end/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Work/ })).toHaveAccessibleName("Work");
+    });
+  });
+
+  it("shows the full label as a tooltip, because a long label is cut", async () => {
+    draw(baseSpec);
+    expect(await screen.findByRole("button", { name: /Alpha/ })).toHaveAttribute("title", "Alpha");
   });
 
   describe("the failed state", () => {

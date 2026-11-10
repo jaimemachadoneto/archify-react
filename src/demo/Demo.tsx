@@ -1,7 +1,7 @@
-import { useMemo, useState, type FC } from "react";
+import { useState, type FC } from "react";
 import WorkflowDiagram from "@/diagram/WorkflowDiagram";
 import type { DiagramSpec } from "@/diagram/spec";
-import { useMediaQuery } from "./useMediaQuery";
+import { useMediaQuery } from "@/diagram/useMediaQuery";
 
 // The demo text is invented and generic. Each id is unique in the whole page.
 
@@ -228,11 +228,7 @@ const DemoDiagram: FC<DemoItem & { narrow: boolean }> = ({
   narrow,
 }) => {
   const turned = narrow && turnsOnNarrow;
-  // A new object makes the diagram run the layout again, so keep it stable.
-  const spec = useMemo<DiagramSpec>(
-    () => (turned ? { ...baseSpec, direction: "DOWN" } : baseSpec),
-    [baseSpec, turned],
-  );
+  const spec: DiagramSpec = turned ? { ...baseSpec, direction: "DOWN" } : baseSpec;
   const height = turned ? narrowHeight : wideHeight;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = spec.nodes.find((node) => node.id === selectedId);

@@ -1,5 +1,5 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import WorkflowDiagram from "./WorkflowDiagram";
 import type { DiagramEdge, DiagramSpec } from "./spec";
 
@@ -39,6 +39,77 @@ function stubReducedMotion(reduce: boolean) {
   vi.stubGlobal("matchMedia", matchMedia);
   return matchMedia;
 }
+
+// A media query list that keeps its listeners, so a test can change the preference.
+function stubLiveMotionQuery(reduce: boolean) {
+  const listeners = new Set<() => void>();
+  const list = {
+    matches: reduce,
+    media: "(prefers-reduced-motion: reduce)",
+    addEventListener: (_: string, listener: () => void) => listeners.add(listener),
+    removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
+  };
+  const matchMedia = vi.fn(() => list);
+  vi.stubGlobal("matchMedia", matchMedia);
+  return {
+    matchMedia,
+    listeners,
+    change(next: boolean) {
+      list.matches = next;
+      listeners.forEach((listener) => listener());
+    },
+  };
+}
+
+function specWithAnimatedEdges(count: number): DiagramSpec {
+  const nodes = Array.from({ length: count + 1 }, (_, i) => ({ id: `n${i}`, label: `Node ${i}` }));
+  nodes[1].label = "Beta";
+  const edges = Array.from({ length: count }, (_, i) => ({
+    id: `e${i}`,
+    source: `n${i}`,
+    target: `n${i + 1}`,
+    animated: true,
+  }));
+  return { version: 1, nodes, edges };
+}
+
+describe("reduced motion", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("removes the dot when the user turns on reduced motion while the diagram shows", async () => {
+    const motion = stubLiveMotionQuery(false);
+    const container = await draw(specWith({ animated: true }));
+    expect(container.querySelectorAll("animateMotion")).toHaveLength(1);
+    act(() => motion.change(true));
+    expect(container.querySelectorAll("animateMotion")).toHaveLength(0);
+  });
+
+  it("removes the media query listener when the diagram unmounts", async () => {
+    const motion = stubLiveMotionQuery(false);
+    render(
+      <WorkflowDiagram
+        spec={specWith({ animated: true })}
+        selectedId={null}
+        onSelect={() => {}}
+        height={400}
+        ariaLabel="Decision trace"
+      />,
+    );
+    await screen.findByRole("button", { name: /Beta/ });
+    expect(motion.listeners.size).toBeGreaterThan(0);
+    cleanup();
+    expect(motion.listeners.size).toBe(0);
+  });
+
+  it("makes one media query list for all the edges", async () => {
+    const motion = stubLiveMotionQuery(false);
+    const container = await draw(specWithAnimatedEdges(3));
+    expect(container.querySelectorAll("animateMotion")).toHaveLength(3);
+    expect(motion.matchMedia).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("animated edge", () => {
   afterEach(() => {

@@ -1,7 +1,8 @@
-import { useId, useSyncExternalStore, type FC } from "react";
+import { useId, type FC } from "react";
 import { BaseEdge, getSmoothStepPath, type Edge as FlowEdge, type EdgeProps } from "@xyflow/react";
 import type { DiagramEdge } from "../spec";
 import type { EdgeSection } from "../layout";
+import { useMediaQuery } from "../useMediaQuery";
 
 export type DiagramEdgeData = {
   label?: string;
@@ -33,25 +34,8 @@ function pathOf(sections: EdgeSection[]): { path: string; labelX: number; labelY
   return { path, labelX: middleX, labelY: middleY };
 }
 
-const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
-
 // CSS cannot stop an SVG animateMotion, so the component reads the media query in JavaScript.
-// A browser without matchMedia, or no window, counts as "no preference".
-function subscribeToMotion(onChange: () => void): () => void {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return () => {};
-  const query = window.matchMedia(REDUCED_MOTION);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-}
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
-  return window.matchMedia(REDUCED_MOTION).matches;
-}
-
-function useReducedMotion(): boolean {
-  return useSyncExternalStore(subscribeToMotion, prefersReducedMotion, () => false);
-}
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
 const FlowEdgeView: FC<EdgeProps<DiagramFlowEdge>> = ({
   id,
@@ -75,7 +59,7 @@ const FlowEdgeView: FC<EdgeProps<DiagramFlowEdge>> = ({
   });
 
   const path = routed?.path ?? fallbackPath;
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useMediaQuery(REDUCED_MOTION);
   const markerId = useId();
   // Only a used edge shows the dot: a skipped or a failed edge carries no flow.
   const state = data?.state ?? "used";
