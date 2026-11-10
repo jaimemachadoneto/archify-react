@@ -13,7 +13,8 @@
     "e2e": "playwright test",
     "lint": "tsc --noEmit && prettier --check .",
     "format": "prettier --write .",
-    "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json"
+    "build:lib": "vite build --config vite.lib.config.ts && tsc -p tsconfig.lib.json",
+    "build:pages": "vite build --base=/archify-react/"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",

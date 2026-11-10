@@ -2,6 +2,8 @@
 
 archify-react draws a workflow diagram in a React app. The diagram shows the path of a request through its steps.
 
+Try the demo at https://jaimemachadoneto.github.io/archify-react/.
+
 - React 19 and react-dom 19 are the peer dependencies. The host needs no Tailwind.
 - The stylesheet is plain CSS.
 - The component draws the diagram. The host keeps the selection.
@@ -250,6 +252,8 @@ These commands work in the project shell:
 | `check`    | Runs the unit tests. It also builds and packs the library.                                                                          |
 | `build`    | Builds the library and the demo. `pnpm build:lib` writes the library to `dist/`. `pnpm build` also writes the demo to `dist-demo/`. |
 | `pnpm e2e` | Runs the browser tests. It needs the browsers of the devenv shell.                                                                  |
+
+`pnpm build:pages` writes the demo for the project site, with `/archify-react/` as the base. The workflow `.github/workflows/pages.yaml` publishes it.
 
 The demo page holds three examples. Run `pnpm dev`. Then open `http://localhost:5173`. The demo reads the same variables as a host app.
 
