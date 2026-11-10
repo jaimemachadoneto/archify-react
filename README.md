@@ -45,6 +45,21 @@ export function Trace({ spec }: { spec: DiagramSpec }) {
 2. Keep the selected ID in your state. The component holds no selection.
 3. Give `onSelect` a stable function, for example a state setter. A new function on each render builds the nodes again.
 
+If your app does not define the host variables, define them in your CSS. This example sets six of them:
+
+```css
+:root {
+  --foreground: #1c1917;
+  --background: #faf9f7;
+  --card: #ffffff;
+  --border: #e5e0d9;
+  --destructive: #b91c1c;
+  --ring: #c2410c;
+}
+```
+
+Without these variables, the diagram uses the system colours. A failed edge draws in the link colour of the browser. The section Theme lists all the variables.
+
 The root element of the component takes the width of its parent element.
 
 | Prop         | Type                   | Default  | Description                                                                                              |
