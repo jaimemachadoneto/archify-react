@@ -81,7 +81,7 @@ function draw(
   spec: DiagramSpec,
   props: {
     selectedId?: string | null;
-    onSelect?: (id: string) => void;
+    onSelect?: (id: string | null) => void;
     highlight?: boolean;
   } = {},
 ) {
@@ -115,6 +115,31 @@ describe("WorkflowDiagram", () => {
     const onSelect = vi.fn();
     draw(baseSpec, { onSelect });
     // fireEvent sends only a click; userEvent sends a mousedown that d3-zoom cannot read in jsdom.
+    fireEvent.click(await screen.findByRole("button", { name: /Beta/ }));
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith("beta");
+  });
+
+  it("calls onSelect with null for a click on the empty pane when a node is selected", async () => {
+    const onSelect = vi.fn();
+    const { container } = draw(baseSpec, { selectedId: "alpha", onSelect });
+    await screen.findByRole("button", { name: /Alpha/ });
+    fireEvent.click(container.querySelector(".react-flow__pane")!);
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith(null);
+  });
+
+  it("does not call onSelect for a click on the empty pane when nothing is selected", async () => {
+    const onSelect = vi.fn();
+    const { container } = draw(baseSpec, { onSelect });
+    await screen.findByRole("button", { name: /Alpha/ });
+    fireEvent.click(container.querySelector(".react-flow__pane")!);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("gives the id, not null, for a click on a node when another node is selected", async () => {
+    const onSelect = vi.fn();
+    draw(baseSpec, { selectedId: "alpha", onSelect });
     fireEvent.click(await screen.findByRole("button", { name: /Beta/ }));
     expect(onSelect).toHaveBeenCalledTimes(1);
     expect(onSelect).toHaveBeenCalledWith("beta");

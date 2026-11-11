@@ -195,6 +195,15 @@ describe("Playground", () => {
     expect(screen.getByText("Selected step ID: triage")).toBeInTheDocument();
   });
 
+  it("clears the selected text when the user clicks the empty pane", async () => {
+    const { container } = render(<Playground />);
+    await nodeButtons();
+    fireEvent.click(screen.getByRole("button", { name: /Triage/ }));
+    expect(screen.getByText("Selected step ID: triage")).toBeInTheDocument();
+    fireEvent.click(container.querySelector(".react-flow__pane")!);
+    expect(screen.getByText("Select a step to see its ID.")).toBeInTheDocument();
+  });
+
   it("clears the selection when another preset has no such step", async () => {
     render(<Playground />);
     await nodeButtons();

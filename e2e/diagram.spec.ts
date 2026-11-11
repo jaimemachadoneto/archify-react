@@ -195,6 +195,57 @@ test.describe("the demo page", () => {
     await expect(node).toBeFocused();
   });
 
+  // A point on the pane where no node, edge or control is under the pointer.
+  async function emptyPanePoint(page: Page, title: string): Promise<{ x: number; y: number }> {
+    const point = await diagram(page, title)
+      .locator(".react-flow__pane")
+      .evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        for (let y = box.top + 8; y < box.bottom - 8; y += 8) {
+          for (let x = box.left + 8; x < box.right - 8; x += 8) {
+            if (document.elementFromPoint(x, y) === el) return { x, y };
+          }
+        }
+        return null;
+      });
+    expect(point, "an empty point on the pane").not.toBeNull();
+    return point!;
+  }
+
+  test("clears the selection with a click on the empty pane", async ({ page }) => {
+    await openDemo(page);
+    const node = nodesOf(page, "Retry loop").filter({ hasText: "Wait and retry" });
+    const panel = page.locator("[data-selection]").nth(2);
+    await node.click();
+    await expect(node).toHaveAttribute("aria-pressed", "true");
+    await diagram(page, "Retry loop").evaluate((el) => el.scrollIntoView({ block: "center" }));
+    const { x, y } = await emptyPanePoint(page, "Retry loop");
+    await page.mouse.click(x, y);
+    await expect(node).toHaveAttribute("aria-pressed", "false");
+    await expect(panel).toContainText("Select a step");
+  });
+
+  test("keeps the selection when the mouse pans the diagram", async ({ page }) => {
+    await openDemo(page);
+    const scope = diagram(page, "Retry loop");
+    const node = nodesOf(page, "Retry loop").filter({ hasText: "Wait and retry" });
+    await node.click();
+    await scope.evaluate((el) => el.scrollIntoView({ block: "center" }));
+    const viewport = scope.locator(".react-flow__viewport");
+    const before = await viewport.evaluate((el) => (el as HTMLElement).style.transform);
+    const { x, y } = await emptyPanePoint(page, "Retry loop");
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 30, y + 10, { steps: 5 });
+    await page.mouse.move(x + 60, y + 20, { steps: 5 });
+    await page.mouse.up();
+    // The pan is real: the viewport moved. The selection stays.
+    await expect
+      .poll(() => viewport.evaluate((el) => (el as HTMLElement).style.transform))
+      .not.toBe(before);
+    await expect(node).toHaveAttribute("aria-pressed", "true");
+  });
+
   test("selects a focused node with the Enter key and shows a focus ring", async ({ page }) => {
     await openDemo(page);
     await tabToNode(page);

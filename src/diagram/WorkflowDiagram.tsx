@@ -13,7 +13,8 @@ export interface WorkflowDiagramProps {
   spec: DiagramSpec;
   selectedId: string | null;
   // Pass a stable function (for example a state setter), or the component rebuilds the nodes on each render.
-  onSelect: (id: string) => void;
+  // The ID of the node that the user selects. A click on the empty pane gives null, when a node is selected.
+  onSelect: (id: string | null) => void;
   height: number;
   ariaLabel: string;
   // Dim the nodes and edges outside the path of the node under the pointer or with focus.
@@ -133,6 +134,10 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
       style: { pointerEvents: "none" },
     }));
   }, [layout, spec, valid]);
+
+  const onPaneClick = useCallback(() => {
+    if (selectedId !== null) onSelect(null);
+  }, [selectedId, onSelect]);
 
   const vertical = shown?.spec.direction === "DOWN";
   const stepNodes = useMemo<DiagramFlowNode[]>(() => {
@@ -258,6 +263,7 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
         nodesFocusable={false}
         edgesFocusable={false}
         elementsSelectable={false}
+        onPaneClick={onPaneClick}
         className="archify-diagram"
         // Below this zoom the text is too small to read. A wide diagram is panned inside the canvas.
         minZoom={MIN_ZOOM}
