@@ -9,7 +9,9 @@ export type LaneFlowNode = FlowNode<LaneNodeData, "lane">;
 
 const Lane: FC<NodeProps<LaneFlowNode>> = ({ data }) => (
   <div className="archify-lane" style={{ width: "100%", height: "100%" }}>
-    <span className="archify-lane__label">{data.label}</span>
+    <span className="archify-lane__label" title={data.label}>
+      {data.label}
+    </span>
   </div>
 );
 

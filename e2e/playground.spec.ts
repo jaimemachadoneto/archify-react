@@ -139,6 +139,37 @@ test.describe("the playground", () => {
     expect(await measure(), "custom palette").toBeGreaterThanOrEqual(3);
   });
 
+  test("ends a long lane label with an ellipsis inside the lane", async ({ page }) => {
+    await openPlayground(page);
+    const label = "A very long lane label that the box of the lane cannot show in one line";
+    const spec = {
+      version: 1,
+      lanes: [{ id: "ops", label }],
+      nodes: [
+        { id: "a", label: "Start", lane: "ops" },
+        { id: "b", label: "End", lane: "ops" },
+      ],
+      edges: [{ id: "e1", source: "a", target: "b" }],
+    };
+    await page.getByRole("textbox", { name: "Spec JSON" }).fill(JSON.stringify(spec));
+    const lane = diagram(page).locator(".archify-lane");
+    await expect(lane).toHaveCount(1);
+    const text = lane.locator(".archify-lane__label");
+    await expect(text).toHaveAttribute("title", label);
+    const measured = async () =>
+      text.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        const laneBox = el.parentElement!.getBoundingClientRect();
+        return {
+          overflow: getComputedStyle(el).textOverflow,
+          // The text is cut: its content is wider than its box.
+          cut: el.scrollWidth > el.clientWidth,
+          inside: box.right <= laneBox.right + 0.5 && box.left >= laneBox.left - 0.5,
+        };
+      });
+    await expect.poll(measured).toEqual({ overflow: "ellipsis", cut: true, inside: true });
+  });
+
   test("shows the whole diagram inside its frame on a phone, also after a change", async ({
     page,
   }) => {

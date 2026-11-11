@@ -257,6 +257,7 @@ The stylesheet is plain CSS. It is not in a CSS layer. It imports the base rules
 - The diagram needs a parent with a width.
 - The React Flow attribution stays visible.
 - A long label stops after two lines, or one line with a caption. The `title` of the node shows all of it.
+- A lane label that is wider than its lane ends with an ellipsis. The `title` of the label shows all of it.
 - The `data-id` of a node element is `step:` and the ID of the node. A test must not select a node by the ID alone.
 
 ## Develop

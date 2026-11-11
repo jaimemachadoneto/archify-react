@@ -199,11 +199,16 @@
   background: var(--archify-muted);
 }
 
-/* The label sits above the lane box, so it never covers a node. */
+/* The label sits above the lane box, so it never covers a node.
+   A label wider than the lane ends with an ellipsis, and the title shows all of it. */
 .archify-lane__label {
   position: absolute;
   bottom: 100%;
   left: 0;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding-bottom: 2px;
   color: var(--archify-muted-fg);
   font-size: 11px;

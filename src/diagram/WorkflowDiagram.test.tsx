@@ -200,6 +200,13 @@ describe("WorkflowDiagram", () => {
     expect(await screen.findByRole("button", { name: /Alpha/ })).toBeInTheDocument();
   });
 
+  it("gives the lane label a title with the whole label", async () => {
+    const label = "A very long lane label that the box of the lane cannot show in one line";
+    draw({ ...laneSpec, lanes: [{ id: "ops", label }] });
+    const text = await screen.findByText(label);
+    expect(text).toHaveAttribute("title", label);
+  });
+
   it("draws a lane and a node whose id looks like the id of the lane", async () => {
     const clash: DiagramSpec = {
       version: 1,

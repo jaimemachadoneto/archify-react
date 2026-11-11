@@ -147,6 +147,14 @@ describe("the stylesheet", () => {
     }
   });
 
+  it("ends a lane label that is too long with an ellipsis, inside the lane", () => {
+    const label = ".archify-lane__label";
+    expect(declared(label, "overflow")).toBe("hidden");
+    expect(declared(label, "text-overflow")).toBe("ellipsis");
+    expect(declared(label, "white-space")).toBe("nowrap");
+    expect(declared(label, "max-width")).toBe("100%");
+  });
+
   it("lets a vertical swipe on a touch device scroll the page", () => {
     // React Flow sets touch-action none on the pane, and a node inherits it. This rule must win by its specificity.
     const media = css.match(
