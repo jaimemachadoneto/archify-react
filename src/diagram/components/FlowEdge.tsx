@@ -100,12 +100,13 @@ const FlowEdgeView: FC<EdgeProps<DiagramFlowEdge>> = ({
         />
         {showDot && (
           // The key is the path. A new path needs a new dot, because a running SMIL animation does not read a new path.
-          // WebKit draws the circle at the origin of the SVG until the first sample of the motion.
-          // The circle is hidden, and a set element with the same begin time shows it with the first position.
-          // A begin value that names the motion (id.begin) never starts in any browser, so use a time.
+          // WebKit drew the circle at the origin of the SVG until the first sample of the motion (seen in our WebKit test).
+          // The circle is hidden, and a set element shows it with the first position. Both elements start at the default
+          // begin time of 0s, so they need no begin attribute. A begin value that names the motion (id.begin) did not
+          // start the animation in our test, so do not use it.
           <circle key={path} r="4" className="archify-edge-dot" visibility="hidden">
-            <set attributeName="visibility" to="visible" begin="0s" />
-            <animateMotion begin="0s" dur="2s" repeatCount="indefinite" path={path} />
+            <set attributeName="visibility" to="visible" />
+            <animateMotion dur="2s" repeatCount="indefinite" path={path} />
           </circle>
         )}
         {/* The label comes last, so it paints over the dot. */}

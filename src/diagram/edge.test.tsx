@@ -107,7 +107,8 @@ describe("reduced motion", () => {
       />,
     );
     await screen.findByRole("button", { name: /Beta/ });
-    expect(motion.listeners.size).toBeGreaterThan(0);
+    // The edge subscribes in a passive effect, which can run after the node appears.
+    await waitFor(() => expect(motion.listeners.size).toBeGreaterThan(0));
     cleanup();
     expect(motion.listeners.size).toBe(0);
   });
@@ -149,8 +150,9 @@ describe("animated edge", () => {
     // The element "set" starts with the motion, so the dot shows with its first position.
     expect(show).toHaveAttribute("attributeName", "visibility");
     expect(show).toHaveAttribute("to", "visible");
-    expect(show?.getAttribute("begin")).toBe("0s");
-    expect(motion?.getAttribute("begin")).toBe(show?.getAttribute("begin"));
+    // Both elements use the default begin time of 0s. A begin attribute adds nothing (checked in WebKit).
+    expect(show).not.toHaveAttribute("begin");
+    expect(motion).not.toHaveAttribute("begin");
   });
 
   it("starts a new dot when the layout changes the path, so the dot never runs along an old path", async () => {
