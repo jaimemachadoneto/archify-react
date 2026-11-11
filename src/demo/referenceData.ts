@@ -63,7 +63,7 @@ export const FUNCTIONS: FunctionRow[] = [
   },
   {
     signature: "layoutDiagram(spec: DiagramSpec): Promise<LayoutResult>",
-    job: "Gives the position and the size of each node, lane and edge.",
+    job: "Gives the position and size of each node and lane, and the sections of each edge.",
   },
   {
     signature: "findOverlaps(result: LayoutResult): Array<{ nodeA: string; nodeB: string }>",
@@ -72,13 +72,13 @@ export const FUNCTIONS: FunctionRow[] = [
   {
     signature:
       'reach(spec: DiagramSpec, id: string, direction: "upstream" | "downstream"): string[]',
-    job: "Gives the nodes that a node reaches upstream or downstream.",
+    job: "Gives the IDs of the nodes on one side of a node, and the node itself. It throws for a direction or an ID that is not valid.",
   },
 ];
 
 // The type makes the page fail to compile when the library adds a code and this list lacks it.
 export const CODE_MEANING: Record<ProblemCode, string> = {
-  INVALID_SHAPE: "A value has the wrong type.",
+  INVALID_SHAPE: "A value has the wrong type or is out of range.",
   INVALID_VERSION: "The version is not 1.",
   TOO_MANY_NODES: `The spec has more than ${MAX_NODES} nodes.`,
   TOO_MANY_EDGES: `The spec has more than ${MAX_EDGES} edges.`,
@@ -88,7 +88,7 @@ export const CODE_MEANING: Record<ProblemCode, string> = {
   DUPLICATE_EDGE_ID: "Two edges have the same ID.",
   EDGE_SOURCE_NOT_FOUND: "The source of an edge is not a node.",
   EDGE_TARGET_NOT_FOUND: "The target of an edge is not a node.",
-  NODE_LANE_NOT_FOUND: "The lane of a node is not a lane.",
+  NODE_LANE_NOT_FOUND: "The lane of a node is not in the list of lanes.",
 };
 
 export const LIMITS = [
@@ -117,7 +117,8 @@ export const HOST_VARIABLES: VariableRow[] = [
   {
     name: "--foreground",
     fallback: "CanvasText",
-    styles: "The text, the edges and the handles.",
+    styles:
+      "The text, the edges, the handles, and the border and inner line of a node under the pointer or selected.",
   },
   { name: "--background", fallback: "Canvas", styles: "The pane behind the diagram." },
   {
@@ -130,16 +131,21 @@ export const HOST_VARIABLES: VariableRow[] = [
     fallback: "CanvasText",
     styles: "The text in a node and in an edge label.",
   },
-  { name: "--border", fallback: "GrayText", styles: "The frame and the controls." },
+  {
+    name: "--border",
+    fallback: "GrayText",
+    styles: "The frame, the controls and the border of an edge label.",
+  },
   {
     name: "--muted",
     fallback: "Canvas",
-    styles: "The fill of a lane and of a node under the pointer.",
+    styles: "The fill of a lane.",
   },
   {
     name: "--muted-foreground",
     fallback: "GrayText",
-    styles: "The caption, a lane, a skipped node, a muted line.",
+    styles:
+      "The caption, the lane label and lane border, the node border, a skipped node, a muted line.",
   },
   {
     name: "--accent",
@@ -147,7 +153,11 @@ export const HOST_VARIABLES: VariableRow[] = [
     styles: "The fill of a selected node, and of a hovered control.",
   },
   { name: "--accent-foreground", fallback: "CanvasText", styles: "The text of that node." },
-  { name: "--destructive", fallback: "LinkText", styles: "A failed node and a failed edge." },
+  {
+    name: "--destructive",
+    fallback: "LinkText",
+    styles: "A failed node, a failed edge and the alert.",
+  },
   { name: "--ring", fallback: "Highlight", styles: "The outline of a focused element." },
   { name: "--input", fallback: "GrayText", styles: "The dots of the grid behind the diagram." },
   { name: "--radius", fallback: "6px", styles: "The corner radius." },

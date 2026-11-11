@@ -22,7 +22,7 @@ const linkClass =
 
 export default function App() {
   const onReference = isReferenceHash(useSyncExternalStore(subscribeToHash, readHash));
-  // The browser looks for the fragment before React draws the page, so a link to a part scrolls here.
+  // The browser looks for the fragment before React draws the page, so this effect scrolls to the part.
   useEffect(() => {
     const hash = window.location.hash;
     if (hash !== REFERENCE_HASH && isReferenceHash(hash)) {

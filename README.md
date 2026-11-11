@@ -139,12 +139,12 @@ A node shows its state in words, so the colour of a node is never the only sign.
 
 The library exports four functions for a host that prepares a spec, or that draws its own view.
 
-| Function                     | Returns                 | Job                                                          |
-| ---------------------------- | ----------------------- | ------------------------------------------------------------ |
-| `validateSpec(spec)`         | `Problem[]`             | Examines an unknown value. It never throws.                  |
-| `layoutDiagram(spec)`        | `Promise<LayoutResult>` | Gives the position and the size of each node, lane and edge. |
-| `findOverlaps(result)`       | `{ nodeA, nodeB }[]`    | Gives the pairs of nodes that cover each other.              |
-| `reach(spec, id, direction)` | `string[]`              | Gives the nodes that a node reaches upstream or downstream.  |
+| Function                     | Returns                 | Job                                                                                                                          |
+| ---------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `validateSpec(spec)`         | `Problem[]`             | Examines an unknown value. It never throws.                                                                                  |
+| `layoutDiagram(spec)`        | `Promise<LayoutResult>` | Gives the position and size of each node and lane, and the sections of each edge.                                            |
+| `findOverlaps(result)`       | `{ nodeA, nodeB }[]`    | Gives the pairs of nodes that cover each other.                                                                              |
+| `reach(spec, id, direction)` | `string[]`              | Gives the IDs of the nodes on one side of a node, and the node itself. It throws for a direction or an ID that is not valid. |
 
 ### validateSpec(spec: unknown): Problem[]
 
@@ -159,19 +159,19 @@ if (problems.length > 0) {
 }
 ```
 
-| Code                    | Meaning                               |
-| ----------------------- | ------------------------------------- |
-| `INVALID_SHAPE`         | A value has the wrong type.           |
-| `INVALID_VERSION`       | The version is not 1.                 |
-| `TOO_MANY_NODES`        | The spec has more than 500 nodes.     |
-| `TOO_MANY_EDGES`        | The spec has more than 2000 edges.    |
-| `LABEL_TOO_LONG`        | A label has more than 200 characters. |
-| `DUPLICATE_LANE_ID`     | Two lanes have the same ID.           |
-| `DUPLICATE_NODE_ID`     | Two nodes have the same ID.           |
-| `DUPLICATE_EDGE_ID`     | Two edges have the same ID.           |
-| `EDGE_SOURCE_NOT_FOUND` | The source of an edge is not a node.  |
-| `EDGE_TARGET_NOT_FOUND` | The target of an edge is not a node.  |
-| `NODE_LANE_NOT_FOUND`   | The lane of a node is not a lane.     |
+| Code                    | Meaning                                         |
+| ----------------------- | ----------------------------------------------- |
+| `INVALID_SHAPE`         | A value has the wrong type or is out of range.  |
+| `INVALID_VERSION`       | The version is not 1.                           |
+| `TOO_MANY_NODES`        | The spec has more than 500 nodes.               |
+| `TOO_MANY_EDGES`        | The spec has more than 2000 edges.              |
+| `LABEL_TOO_LONG`        | A label has more than 200 characters.           |
+| `DUPLICATE_LANE_ID`     | Two lanes have the same ID.                     |
+| `DUPLICATE_NODE_ID`     | Two nodes have the same ID.                     |
+| `DUPLICATE_EDGE_ID`     | Two edges have the same ID.                     |
+| `EDGE_SOURCE_NOT_FOUND` | The source of an edge is not a node.            |
+| `EDGE_TARGET_NOT_FOUND` | The target of an edge is not a node.            |
+| `NODE_LANE_NOT_FOUND`   | The lane of a node is not in the list of lanes. |
 
 ### layoutDiagram(spec: DiagramSpec): Promise<LayoutResult>
 
@@ -187,7 +187,7 @@ The result holds three lists:
 
 The function returns each pair of nodes whose boxes cover each other. Use it in a test that proves the layout stays clear.
 
-The function examines nodes only. It does not examine lanes. A node with a fixed `position` can leave its lane, and the box of the lane then grows. Such a box can cover another lane or a node of another lane, and the function does not report it. To find that, compare the `lanes` boxes of the result in your own test.
+The function examines nodes only. It does not examine lanes. A node with a fixed `position` can lie outside the box that the layout calculated for its lane. The box of the lane then grows to hold the node. That box can cover another lane or a node of another lane, and `findOverlaps` does not report it. To find such a case, compare the boxes in `lanes` with each other and with the nodes in your own test.
 
 ### reach(spec, id, direction)
 
@@ -216,22 +216,22 @@ The layout runs on the main thread. A larger spec can make the page slow to answ
 
 The stylesheet reads these host variables. Each one has a fallback for a host that does not define it.
 
-| Host variable         | Fallback                | Styles                                                 |
-| --------------------- | ----------------------- | ------------------------------------------------------ |
-| `--foreground`        | `CanvasText`            | The text, the edges and the handles.                   |
-| `--background`        | `Canvas`                | The pane behind the diagram.                           |
-| `--card`              | `Canvas`                | The node fill, the edge label and the controls.        |
-| `--card-foreground`   | `CanvasText`            | The text in a node and in an edge label.               |
-| `--border`            | `GrayText`              | The frame and the controls.                            |
-| `--muted`             | `Canvas`                | The fill of a lane and of a node under the pointer.    |
-| `--muted-foreground`  | `GrayText`              | The caption, a lane, a skipped node, a muted line.     |
-| `--accent`            | `Canvas`                | The fill of a selected node, and of a hovered control. |
-| `--accent-foreground` | `CanvasText`            | The text of that node.                                 |
-| `--destructive`       | `LinkText`              | A failed node and a failed edge.                       |
-| `--ring`              | `Highlight`             | The outline of a focused element.                      |
-| `--input`             | `GrayText`              | The dots of the grid behind the diagram.               |
-| `--radius`            | `6px`                   | The corner radius.                                     |
-| `--font-sans`         | `system-ui, sans-serif` | The font family.                                       |
+| Host variable         | Fallback                | Styles                                                                                                   |
+| --------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `--foreground`        | `CanvasText`            | The text, the edges, the handles, and the border and inner line of a node under the pointer or selected. |
+| `--background`        | `Canvas`                | The pane behind the diagram.                                                                             |
+| `--card`              | `Canvas`                | The node fill, the edge label and the controls.                                                          |
+| `--card-foreground`   | `CanvasText`            | The text in a node and in an edge label.                                                                 |
+| `--border`            | `GrayText`              | The frame, the controls and the border of an edge label.                                                 |
+| `--muted`             | `Canvas`                | The fill of a lane.                                                                                      |
+| `--muted-foreground`  | `GrayText`              | The caption, the lane label and lane border, the node border, a skipped node, a muted line.              |
+| `--accent`            | `Canvas`                | The fill of a selected node, and of a hovered control.                                                   |
+| `--accent-foreground` | `CanvasText`            | The text of that node.                                                                                   |
+| `--destructive`       | `LinkText`              | A failed node, a failed edge and the alert.                                                              |
+| `--ring`              | `Highlight`             | The outline of a focused element.                                                                        |
+| `--input`             | `GrayText`              | The dots of the grid behind the diagram.                                                                 |
+| `--radius`            | `6px`                   | The corner radius.                                                                                       |
+| `--font-sans`         | `system-ui, sans-serif` | The font family.                                                                                         |
 
 For a look of its own, override the private variables. The rules read only these, so the change stays inside the diagram.
 
@@ -258,7 +258,7 @@ The stylesheet is plain CSS. It is not in a CSS layer. It imports the base rules
 
 ## Test a host
 
-jsdom does no layout and lacks some browser APIs. A test that renders `WorkflowDiagram` under jsdom needs three stubs for browser APIs that React Flow uses. Run this code one time, before the first render, for example in the setup file of the test runner:
+jsdom does no layout and lacks some browser APIs. A test that renders `WorkflowDiagram` under jsdom needs these stubs for browser APIs that React Flow uses. The table below shows when each one is needed. Run this code one time, before the first render, for example in the setup file of the test runner:
 
 ```ts host-stubs
 // React Flow observes the size of each node with a ResizeObserver, which jsdom lacks.
@@ -286,17 +286,17 @@ Object.defineProperty(SVGElement.prototype, "getBBox", {
 });
 ```
 
-The test `src/diagram/hostTesting.test.tsx` of this repository runs this code block as it is. It removes each stub in turn, and the test fails:
+The test `src/diagram/hostTesting.test.tsx` of this repository runs this code block as it is. The test removes each stub in turn and checks that the render fails. The table shows each failure:
 
 | Missing stub        | What fails                                                                      |
 | ------------------- | ------------------------------------------------------------------------------- |
 | `ResizeObserver`    | The first render throws `ResizeObserver is not defined`.                        |
-| `getBBox`           | An edge with a `label` throws `getBBox is not a function` after the layout.     |
 | `DOMMatrixReadOnly` | A change of `direction` throws `window.DOMMatrixReadOnly is not a constructor`. |
+| `getBBox`           | An edge with a `label` throws `getBBox is not a function` after the layout.     |
 
 ### Clean up after each test
 
-Testing Library removes the rendered diagram after each test only when the test runner has a global `afterEach`. Vitest has no global `afterEach` unless the config sets `globals: true`. Without it, the diagram of one test stays in the document in the next test. Call `cleanup` after each test, for example in the same setup file:
+Testing Library removes the rendered diagram after each test only when the test runner has a global `afterEach`. Vitest has no global `afterEach` unless the config sets `globals: true`. Without a global `afterEach`, the diagram of one test stays in the document in the next test. Call `cleanup` after each test, for example in the same setup file:
 
 ```ts
 import { cleanup } from "@testing-library/react";
@@ -326,7 +326,7 @@ const node = await screen.findByRole("button", { name: /Receive request/ }, { ti
 
 Under load, the first layout can take longer than the default timeout of one second, so give a longer timeout.
 
-After you change the spec, the old layout stays on the screen while the next layout runs, and a new node is not there yet. Wait for `aria-busy` to go:
+After you change the spec, the old layout stays on the screen while the next layout runs, and a new node is not there yet. Wait until `aria-busy` is gone:
 
 ```tsx
 const group = screen.getByRole("group", { name: "Trace" });
@@ -341,7 +341,7 @@ await expect(diagram).not.toHaveAttribute("aria-busy");
 await expect(diagram.getByRole("button", { name: /Receive request/ })).toBeVisible();
 ```
 
-To find a node by the ID in the spec, use `diagram.locator('[data-id="step:<id>"]')`. React Flow moves the view to fit the diagram after the first measure. Before a screenshot or a click at a position, wait until the `transform` style of `.react-flow__viewport` stops changing.
+To find a node by the ID in the spec, use `diagram.locator('[data-id="step:<id>"]')`. React Flow moves the view to fit the diagram after the first measurement. Before a screenshot or a click at a position, wait until the `transform` style of `.react-flow__viewport` does not change.
 
 ### What to test under jsdom
 
@@ -373,7 +373,7 @@ These commands work in the project shell:
 
 `pnpm build:pages` writes the demo for the project site, with `/archify-react/` as the base. The workflow `.github/workflows/pages.yaml` publishes it.
 
-The demo page holds three examples and a playground. The link Reference at the top opens the reference page at `#reference`. A hash route works on GitHub Pages, which has no fallback for a path. The page reads the limits and the problem codes from the library, and a test compares its tables with this file and with the stylesheet. The playground has controls for the direction, the highlight, the spec and the look. Run `pnpm dev`. Then open `http://localhost:5173`. The demo reads the same variables as a host app. A click on the empty pane in the playground clears the selected step ID.
+The demo page holds three examples and a playground. The link Reference at the top opens the reference page at `#reference`. A hash route works on GitHub Pages, which has no fallback for a path. The page reads the limits and the problem codes from the library. A test compares its tables with this file and with the stylesheet. The playground has controls for the direction, the highlight, the spec and the look. Run `pnpm dev`. Then open `http://localhost:5173`. The demo reads the same variables as a host app. A click on the empty pane in the playground clears the selected step ID.
 
 ## Licence
 

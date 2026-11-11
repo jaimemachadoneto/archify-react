@@ -30,7 +30,7 @@ export function guardVerticalSwipe(root: HTMLElement): () => void {
       const dy = Math.abs(event.touches[0]!.clientY - startY);
       if (Math.max(dx, dy) >= DECIDE_DISTANCE) verdict = dy > dx ? "vertical" : "free";
     }
-    // A swallowed move is not lost: d3-zoom measures a pan from the start point of the touch.
+    // A stopped move is not lost: d3-zoom measures a pan from the start point of the touch.
     if (verdict !== "free") event.stopPropagation();
   };
 
