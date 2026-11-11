@@ -139,6 +139,44 @@ test.describe("the playground", () => {
     expect(await measure(), "custom palette").toBeGreaterThanOrEqual(3);
   });
 
+  test("lets the label of a lane receive the pointer, and a click on it keeps the pane working", async ({
+    page,
+  }) => {
+    await openPlayground(page);
+    const label = diagram(page).locator(".archify-lane__label").first();
+    await expect(label).toHaveAttribute("title", "Customer");
+    // The lane node has pointer-events none. The label must still be the element under the pointer, or its title never shows.
+    await label.scrollIntoViewIfNeeded();
+    const box = (await label.boundingBox())!;
+    const hit = await page.evaluate(
+      ({ x, y }) => document.elementFromPoint(x, y)?.className ?? null,
+      { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+    );
+    expect(hit).toBe("archify-lane__label");
+
+    // A click on the label does not change the selection, and a click on the empty pane still clears it.
+    const node = nodes(page).filter({ hasText: "Open ticket" });
+    await node.click();
+    await expect(node).toHaveAttribute("aria-pressed", "true");
+    await label.click();
+    // The label is not the pane, so the click keeps the selection.
+    await expect(node).toHaveAttribute("aria-pressed", "true");
+    const point = await diagram(page)
+      .locator(".react-flow__pane")
+      .evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        for (let y = rect.top + 8; y < rect.bottom - 8; y += 8) {
+          for (let x = rect.left + 8; x < rect.right - 8; x += 8) {
+            if (document.elementFromPoint(x, y) === el) return { x, y };
+          }
+        }
+        return null;
+      });
+    expect(point, "an empty point on the pane").not.toBeNull();
+    await page.mouse.click(point!.x, point!.y);
+    await expect(node).toHaveAttribute("aria-pressed", "false");
+  });
+
   test("ends a long lane label with an ellipsis inside the lane", async ({ page }) => {
     await openPlayground(page);
     const label = "A very long lane label that the box of the lane cannot show in one line";

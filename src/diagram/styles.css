@@ -65,22 +65,14 @@
     box-shadow 150ms ease;
 }
 
-/* The pointer is a light signal: the muted fill. A selected node has the accent fill, a ring and bold text. */
+/* The pointer is a light signal: a darker border and an inner line. The fill stays the same as the fill of a plain node,
+   because the muted fill of a lane is also the fill of a node under the pointer in a lane. The rules for a selected node
+   are after the rules for each state, so that a selected node keeps its look under the pointer. */
 .archify-node:hover {
   border-color: var(--archify-fg);
-  background: var(--archify-muted);
+  background: var(--archify-card);
   color: var(--archify-card-fg);
-}
-
-/* The :hover selector keeps the look of a selected node under the pointer. */
-.archify-node--selected,
-.archify-node--selected:hover {
-  border-color: var(--archify-fg);
-  background: var(--archify-accent);
-  color: var(--archify-accent-fg);
-  /* A second line inside the border. It adds no size, so the layout stays the same. */
   box-shadow: inset 0 0 0 1px var(--archify-fg);
-  font-weight: 700;
 }
 
 /* The focus ring is the only use of the signal colour on a node. */
@@ -148,20 +140,8 @@
 }
 
 .archify-node[data-state="skipped"]:hover {
-  background: var(--archify-muted);
+  background: var(--archify-card);
   color: var(--archify-card-fg);
-}
-
-.archify-node--selected[data-state="skipped"] {
-  background: var(--archify-accent);
-  color: var(--archify-accent-fg);
-}
-
-/* A selected skipped node keeps the dashed border, and it is bold with a ring: not a colour only. */
-.archify-node--selected[data-state="skipped"] {
-  border-color: var(--archify-fg);
-  box-shadow: inset 0 0 0 1px var(--archify-fg);
-  font-weight: 700;
 }
 
 .archify-node[data-state="failed"] {
@@ -169,12 +149,10 @@
   box-shadow: inset 0 0 0 1px var(--archify-danger);
 }
 
-/* A selected failed node keeps the destructive border and adds a second ring in the text colour. */
-.archify-node--selected[data-state="failed"] {
+/* A failed node under the pointer gets a wider inner line in the danger colour. */
+.archify-node[data-state="failed"]:hover {
   border-color: var(--archify-danger);
-  box-shadow:
-    inset 0 0 0 1px var(--archify-danger),
-    inset 0 0 0 3px var(--archify-fg);
+  box-shadow: inset 0 0 0 2px var(--archify-danger);
 }
 
 .archify-node[data-state="failed"] .archify-node__note {
@@ -182,9 +160,32 @@
   font-weight: 600;
 }
 
+/* A selected node has the accent fill, bold text and a wider inner line in the text colour.
+   The :hover variants have the same weight as the rules for a state under the pointer, and they come after those rules,
+   so the look of a selected node does not change under the pointer. A skipped node keeps its dashed border. */
+.archify-node--selected,
+.archify-node--selected:hover,
+.archify-node--selected[data-state],
+.archify-node--selected[data-state]:hover {
+  border-color: var(--archify-fg);
+  background: var(--archify-accent);
+  color: var(--archify-accent-fg);
+  /* An inner line adds no size, so the layout stays the same. */
+  box-shadow: inset 0 0 0 2px var(--archify-fg);
+  font-weight: 700;
+}
+
+/* A selected failed node keeps the danger border and adds a second inner line in the text colour. */
+.archify-node--selected[data-state="failed"],
+.archify-node--selected[data-state="failed"]:hover {
+  border-color: var(--archify-danger);
+  box-shadow:
+    inset 0 0 0 1px var(--archify-danger),
+    inset 0 0 0 3px var(--archify-fg);
+}
+
 /* On the accent background of a selected node, the caption keeps the text colour. */
-.archify-node--selected[data-state="failed"] .archify-node__note,
-.archify-node[data-state="failed"]:hover .archify-node__note {
+.archify-node--selected[data-state="failed"] .archify-node__note {
   color: inherit;
 }
 
@@ -200,9 +201,11 @@
 }
 
 /* The label sits above the lane box, so it never covers a node.
-   A label wider than the lane ends with an ellipsis, and the title shows all of it. */
+   A label wider than the lane ends with an ellipsis, and the title shows all of it.
+   The lane node has pointer-events none, and a child inherits it, so the title needs "auto" to show. */
 .archify-lane__label {
   position: absolute;
+  pointer-events: auto;
   bottom: 100%;
   left: 0;
   box-sizing: border-box;
@@ -285,7 +288,9 @@
   cursor: default;
 }
 
-/* React Flow sets touch-action none on the pane, and a node inherits it. A swipe on the diagram then cannot scroll the page.
+/* React Flow sets touch-action none on the pane. The property is not inherited, but the browser combines the values of an
+   element and of its ancestors, so a node under the pane gets the same effective touch-action.
+   A swipe on the diagram then cannot scroll the page.
    pan-y lets the browser scroll the page for a vertical swipe. A horizontal swipe still pans the diagram.
    d3-zoom also cancels the touchmove event, so touchScroll.ts keeps a vertical swipe away from it.
    A mouse is not affected, so the rule is only for a device with a coarse pointer. */

@@ -16,6 +16,12 @@ const diagrams = [
 ] as const;
 
 const diagram = (page: Page, title: string): Locator => page.getByRole("group", { name: title });
+// The panel under a diagram. The section of the diagram has the title as a heading.
+const panelOf = (page: Page, title: string): Locator =>
+  page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { level: 2, name: title, exact: true }) })
+    .locator("[data-selection]");
 const nodesOf = (page: Page, title: string): Locator =>
   diagram(page, title).locator("button.archify-node");
 
@@ -188,7 +194,7 @@ test.describe("the demo page", () => {
     const node = nodesOf(page, "Retry loop").filter({ hasText: "Wait and retry" });
     await node.click();
     await expect(node).toHaveAttribute("aria-pressed", "true");
-    const panel = page.locator("[data-selection]").nth(2);
+    const panel = panelOf(page, "Retry loop");
     await expect(panel).toContainText("Wait and retry");
     await expect(panel.locator("[data-summary]")).not.toBeEmpty();
     // A real click gives the button the focus. A pan must not start on a node.
@@ -215,7 +221,7 @@ test.describe("the demo page", () => {
   test("clears the selection with a click on the empty pane", async ({ page }) => {
     await openDemo(page);
     const node = nodesOf(page, "Retry loop").filter({ hasText: "Wait and retry" });
-    const panel = page.locator("[data-selection]").nth(2);
+    const panel = panelOf(page, "Retry loop");
     await node.click();
     await expect(node).toHaveAttribute("aria-pressed", "true");
     await diagram(page, "Retry loop").evaluate((el) => el.scrollIntoView({ block: "center" }));
@@ -283,19 +289,29 @@ test.describe("the demo page", () => {
     expect(fill).toBe(token);
   });
 
-  test("fills a node under the pointer in another colour than a selected node", async ({
+  // The cue of the pointer is a border and an inner line, not the fill: the muted fill of a lane is the same colour.
+  test("shows a node under the pointer with a border and an inner line, and a selected node with more", async ({
     page,
   }) => {
     await openDemo(page);
     const title = "Retry loop";
-    const fill = (node: Locator) => node.evaluate((el) => getComputedStyle(el).backgroundColor);
-    // The fill moves in 150 ms, so this waits until two reads in a row give the same colour.
-    const settled = async (node: Locator): Promise<string> => {
+    const look = (node: Locator) =>
+      node.evaluate((el) => {
+        const style = getComputedStyle(el);
+        return {
+          fill: style.backgroundColor,
+          border: style.borderTopColor,
+          shadow: style.boxShadow,
+          weight: Number(style.fontWeight),
+        };
+      });
+    // The border and the line move in 150 ms, so this waits until two reads in a row are the same.
+    const settled = async (node: Locator) => {
       let previous = "";
       await expect
         .poll(
           async () => {
-            const now = await fill(node);
+            const now = JSON.stringify(await look(node));
             const same = now === previous;
             previous = now;
             return same;
@@ -303,21 +319,50 @@ test.describe("the demo page", () => {
           { intervals: [250] },
         )
         .toBe(true);
-      return previous;
+      return JSON.parse(previous) as Awaited<ReturnType<typeof look>>;
     };
     const first = nodesOf(page, title).filter({ hasText: "Queue job" });
     const second = nodesOf(page, title).filter({ hasText: "Wait and retry" });
     const plain = await settled(first);
     await first.hover();
     const hovered = await settled(first);
-    expect(hovered, "the pointer changes the fill").not.toBe(plain);
+    expect(hovered.fill, "the pointer keeps the fill").toBe(plain.fill);
+    expect(hovered.border, "the pointer changes the border").not.toBe(plain.border);
+    expect(hovered.shadow, "the pointer adds an inner line").not.toBe(plain.shadow);
+    expect(hovered.weight).toBe(plain.weight);
     await second.click();
     await expect(second).toHaveAttribute("aria-pressed", "true");
     const selected = await settled(second);
-    expect(selected, "a selected node under the pointer").not.toBe(hovered);
-    expect(selected).not.toBe(plain);
+    expect(selected.fill, "a selected node has the accent fill").not.toBe(hovered.fill);
+    expect(selected.shadow, "a selected node has a wider inner line").not.toBe(hovered.shadow);
+    expect(selected.weight, "a selected node is bold").toBeGreaterThanOrEqual(700);
+    // The pointer still rests on the selected node after the click, so this is a selected node under the pointer.
+    expect(await settled(second)).toEqual(selected);
     await page.mouse.move(2, 2);
-    expect(await settled(second), "a selected node without the pointer").toBe(selected);
+    expect(await settled(second), "a selected node without the pointer").toEqual(selected);
+  });
+
+  test("keeps the accent fill of a selected skipped node and a selected failed node under the pointer", async ({
+    page,
+  }) => {
+    await openDemo(page);
+    const accent = await page.evaluate(() => {
+      const probe = document.createElement("div");
+      probe.style.color = "var(--accent)";
+      document.body.append(probe);
+      const value = getComputedStyle(probe).color;
+      probe.remove();
+      return value;
+    });
+    for (const label of ["Check cache", "Check facts"]) {
+      const node = nodesOf(page, "Decision trace").filter({ hasText: label });
+      await node.scrollIntoViewIfNeeded();
+      await node.click();
+      await expect(node).toHaveAttribute("aria-pressed", "true");
+      await node.hover();
+      await expect(node, `${label} under the pointer`).toHaveCSS("background-color", accent);
+      await expect(node).toHaveCSS("font-weight", "700");
+    }
   });
 
   test("takes a screenshot of each diagram", async ({ page }, testInfo) => {
