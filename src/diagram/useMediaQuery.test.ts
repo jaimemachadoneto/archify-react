@@ -42,6 +42,30 @@ describe("useMediaQuery", () => {
     expect(result.current).toBe(false);
   });
 
+  it("follows a change with addListener when the browser has no addEventListener", () => {
+    const listeners = new Set<() => void>();
+    const list = {
+      matches: true,
+      addListener: vi.fn((listener: () => void) => listeners.add(listener)),
+      removeListener: vi.fn((listener: () => void) => listeners.delete(listener)),
+    };
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => list),
+    );
+    const { result, unmount } = renderHook(() => useMediaQuery("(max-width: 480px)"));
+    expect(result.current).toBe(true);
+    expect(list.addListener).toHaveBeenCalledTimes(1);
+    act(() => {
+      list.matches = false;
+      listeners.forEach((listener) => listener());
+    });
+    expect(result.current).toBe(false);
+    unmount();
+    expect(list.removeListener).toHaveBeenCalledTimes(1);
+    expect(listeners.size).toBe(0);
+  });
+
   it("reads one media query list for two hooks with the same query", () => {
     stubMatchMedia(false);
     renderHook(() => [useMediaQuery("(max-width: 480px)"), useMediaQuery("(max-width: 480px)")]);

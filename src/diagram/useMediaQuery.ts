@@ -24,6 +24,11 @@ export function useMediaQuery(query: string): boolean {
     (onChange: () => void) => {
       const list = listFor(query);
       if (!list) return () => {};
+      // Safari before 14 has only the old methods.
+      if (typeof list.addEventListener !== "function") {
+        list.addListener(onChange);
+        return () => list.removeListener(onChange);
+      }
       list.addEventListener("change", onChange);
       return () => list.removeEventListener("change", onChange);
     },
