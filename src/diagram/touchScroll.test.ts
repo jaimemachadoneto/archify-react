@@ -8,12 +8,13 @@ function stubCoarse(coarse: boolean) {
   );
 }
 
-// jsdom cannot build a touch list, so the test sets the fields that the guard reads.
+// jsdom cannot build a touch list, so the test sets the fields that a listener reads. A real
+// event carries both lists, and d3-zoom of React Flow reads .length on each one.
 function touch(type: string, points: Array<[number, number]>): Event {
   const event = new Event(type, { bubbles: true, cancelable: true });
-  Object.defineProperty(event, "touches", {
-    value: points.map(([clientX, clientY]) => ({ clientX, clientY })),
-  });
+  const list = points.map(([clientX, clientY]) => ({ clientX, clientY }));
+  Object.defineProperty(event, "touches", { value: list });
+  Object.defineProperty(event, "changedTouches", { value: list });
   return event;
 }
 
