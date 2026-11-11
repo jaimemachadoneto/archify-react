@@ -70,6 +70,18 @@ describe("App", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Workflow diagrams");
   });
 
+  it("shows the same text under the title in the demo and in the reference, so the page does not jump", async () => {
+    const intro = () => document.querySelector("header p:not(:first-child)")?.textContent;
+    const { unmount } = render(<App />);
+    const demo = intro();
+    expect(demo).toBeTruthy();
+    unmount();
+    window.location.hash = "#reference";
+    render(<App />);
+    expect(intro()).toBe(demo);
+    expect(screen.getByRole("navigation", { name: "Pages" })).toBeInTheDocument();
+  });
+
   it("goes back to the demo with the link Demo", async () => {
     window.location.hash = "#reference";
     render(<App />);

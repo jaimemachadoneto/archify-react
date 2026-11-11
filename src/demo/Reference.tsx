@@ -19,6 +19,9 @@ const linkClass =
 
 const th = "bg-muted px-3 py-2 text-left font-medium";
 const td = "border-t border-border px-3 py-2 align-top";
+// The first cell of a row stays at the left edge, so the name of a row is in view after a sideways scroll.
+const sticky = "sticky left-0 shadow-[inset_-1px_0_0_var(--border)]";
+const rowHead = `${td} ${sticky} bg-card text-left font-normal`;
 
 const Code: FC<{ children: ReactNode }> = ({ children }) => (
   <code className="font-mono text-xs">{children}</code>
@@ -43,14 +46,14 @@ const Part: FC<{
       role="region"
       aria-labelledby={`${id}-title`}
       tabIndex={0}
-      className="overflow-x-auto rounded-md border border-border bg-card text-card-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      className="overflow-x-auto rounded-md border border-muted-foreground bg-card text-card-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       <table className="w-full min-w-[34rem] border-collapse text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead>
           <tr>
-            {head.map((name) => (
-              <th key={name} scope="col" className={th}>
+            {head.map((name, index) => (
+              <th key={name} scope="col" className={index === 0 ? `${th} ${sticky}` : th}>
                 {name}
               </th>
             ))}
@@ -59,6 +62,9 @@ const Part: FC<{
         <tbody>{children}</tbody>
       </table>
     </div>
+    <p className="text-xs text-muted-foreground sm:hidden">
+      Scroll sideways to see all the columns.
+    </p>
   </section>
 );
 
@@ -73,12 +79,12 @@ const Reference: FC = () => (
         the library, so this page shows the values of this version.
       </p>
       <nav aria-label="Contents">
-        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <ul className="flex flex-wrap gap-x-2 text-sm">
           {PARTS.map((part) => (
             <li key={part.id}>
               <a
                 href={`#${part.id}`}
-                className={`${linkClass} inline-flex min-h-11 items-center sm:min-h-6`}
+                className={`${linkClass} inline-flex min-h-11 min-w-11 items-center justify-center px-2 sm:min-h-6`}
               >
                 {part.title}
               </a>
@@ -97,7 +103,7 @@ const Reference: FC = () => (
     >
       {PROPS.map((prop) => (
         <tr key={prop.name}>
-          <th scope="row" className={`${td} text-left font-normal`}>
+          <th scope="row" className={rowHead}>
             <Code>{prop.name}</Code>
           </th>
           <td className={td}>
@@ -118,7 +124,7 @@ const Reference: FC = () => (
     >
       {FUNCTIONS.map((fn) => (
         <tr key={fn.signature}>
-          <th scope="row" className={`${td} text-left font-normal`}>
+          <th scope="row" className={rowHead}>
             <Code>{fn.signature}</Code>
           </th>
           <td className={td}>{fn.job}</td>
@@ -135,7 +141,7 @@ const Reference: FC = () => (
     >
       {PROBLEM_CODES.map((code) => (
         <tr key={code}>
-          <th scope="row" className={`${td} whitespace-nowrap text-left font-normal`}>
+          <th scope="row" className={`${rowHead} whitespace-nowrap`}>
             <Code>{code}</Code>
           </th>
           <td className={td}>{CODE_MEANING[code]}</td>
@@ -152,7 +158,7 @@ const Reference: FC = () => (
     >
       {LIMITS.map((limit) => (
         <tr key={limit.name}>
-          <th scope="row" className={`${td} whitespace-nowrap text-left font-normal`}>
+          <th scope="row" className={`${rowHead} whitespace-nowrap`}>
             <Code>{limit.name}</Code>
           </th>
           <td className={td}>{String(limit.value)}</td>
@@ -170,7 +176,7 @@ const Reference: FC = () => (
     >
       {HOST_VARIABLES.map((variable) => (
         <tr key={variable.name}>
-          <th scope="row" className={`${td} whitespace-nowrap text-left font-normal`}>
+          <th scope="row" className={`${rowHead} whitespace-nowrap`}>
             <Code>{variable.name}</Code>
           </th>
           <td className={td}>

@@ -136,6 +136,23 @@ describe("Reference", () => {
     expect(rows).toEqual(readmeTable("| Host variable"));
   });
 
+  it("tells a phone user to scroll a table sideways, and shows the hint only below the sm breakpoint", () => {
+    const hints = screen.getAllByText("Scroll sideways to see all the columns.");
+    expect(hints).toHaveLength(5);
+    for (const hint of hints) expect(hint).toHaveClass("sm:hidden");
+  });
+
+  it("keeps the first column of each table in view when the table scrolls sideways", () => {
+    for (const table of screen.getAllByRole("table")) {
+      const first = within(table)
+        .getAllByRole("row")
+        .map((row) => row.querySelector("th, td")!);
+      expect(first).toHaveLength(within(table).getAllByRole("row").length);
+      for (const cell of first)
+        expect(cell, cell.textContent ?? "").toHaveClass("sticky", "left-0");
+    }
+  });
+
   it("puts each table in a region that a keyboard user can scroll", () => {
     const regions = screen.getAllByRole("region");
     expect(regions).toHaveLength(5);

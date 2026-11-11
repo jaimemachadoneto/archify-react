@@ -266,6 +266,10 @@ const Demo: FC = () => {
   const narrow = useMediaQuery(NARROW);
   return (
     <div className="flex min-w-0 flex-col gap-8">
+      <p className="max-w-prose text-sm text-muted-foreground">
+        Three examples and a playground. Hover or focus a step to follow its path. Press a step to
+        select it.
+      </p>
       {demos.map((demo) => (
         <DemoDiagram key={demo.title} {...demo} narrow={narrow} />
       ))}

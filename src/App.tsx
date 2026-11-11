@@ -17,7 +17,7 @@ const isReferenceHash = (hash: string) =>
   hash === REFERENCE_HASH || hash.startsWith(`${REFERENCE_HASH}-`);
 
 const linkClass =
-  "inline-flex min-h-11 items-center rounded-sm underline-offset-4 hover:underline sm:min-h-6 " +
+  "inline-flex min-h-11 min-w-11 items-center justify-center px-2 rounded-sm underline-offset-4 hover:underline sm:min-h-6 " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 export default function App() {
@@ -43,10 +43,10 @@ export default function App() {
         <div>
           <p className="text-xs text-muted-foreground">archify-react</p>
           <h1 className="text-xl font-bold tracking-tight">Workflow diagrams</h1>
+          {/* The same text in both views, so the content does not jump when the view changes. */}
           <p className="max-w-prose text-sm text-muted-foreground">
-            {onReference
-              ? "The props, the functions, the problem codes, the limits and the host variables."
-              : "Three examples and a playground, all with invented data. Hover or focus a step to follow its path. Press a step to select it."}
+            A React component that draws a workflow diagram from a JSON spec. All the data here is
+            invented.
           </p>
           <nav aria-label="Pages" className="mt-1 flex gap-4 text-sm font-medium">
             <a
