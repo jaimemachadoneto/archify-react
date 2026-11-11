@@ -65,13 +65,16 @@
     box-shadow 150ms ease;
 }
 
+/* The pointer is a light signal: the muted fill. A selected node has the accent fill, a ring and bold text. */
 .archify-node:hover {
   border-color: var(--archify-fg);
-  background: var(--archify-accent);
-  color: var(--archify-accent-fg);
+  background: var(--archify-muted);
+  color: var(--archify-card-fg);
 }
 
-.archify-node--selected {
+/* The :hover selector keeps the look of a selected node under the pointer. */
+.archify-node--selected,
+.archify-node--selected:hover {
   border-color: var(--archify-fg);
   background: var(--archify-accent);
   color: var(--archify-accent-fg);
@@ -144,7 +147,11 @@
   font-weight: 400;
 }
 
-.archify-node[data-state="skipped"]:hover,
+.archify-node[data-state="skipped"]:hover {
+  background: var(--archify-muted);
+  color: var(--archify-card-fg);
+}
+
 .archify-node--selected[data-state="skipped"] {
   background: var(--archify-accent);
   color: var(--archify-accent-fg);

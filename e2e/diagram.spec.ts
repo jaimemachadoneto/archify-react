@@ -283,6 +283,43 @@ test.describe("the demo page", () => {
     expect(fill).toBe(token);
   });
 
+  test("fills a node under the pointer in another colour than a selected node", async ({
+    page,
+  }) => {
+    await openDemo(page);
+    const title = "Retry loop";
+    const fill = (node: Locator) => node.evaluate((el) => getComputedStyle(el).backgroundColor);
+    // The fill moves in 150 ms, so this waits until two reads in a row give the same colour.
+    const settled = async (node: Locator): Promise<string> => {
+      let previous = "";
+      await expect
+        .poll(
+          async () => {
+            const now = await fill(node);
+            const same = now === previous;
+            previous = now;
+            return same;
+          },
+          { intervals: [250] },
+        )
+        .toBe(true);
+      return previous;
+    };
+    const first = nodesOf(page, title).filter({ hasText: "Queue job" });
+    const second = nodesOf(page, title).filter({ hasText: "Wait and retry" });
+    const plain = await settled(first);
+    await first.hover();
+    const hovered = await settled(first);
+    expect(hovered, "the pointer changes the fill").not.toBe(plain);
+    await second.click();
+    await expect(second).toHaveAttribute("aria-pressed", "true");
+    const selected = await settled(second);
+    expect(selected, "a selected node under the pointer").not.toBe(hovered);
+    expect(selected).not.toBe(plain);
+    await page.mouse.move(2, 2);
+    expect(await settled(second), "a selected node without the pointer").toBe(selected);
+  });
+
   test("takes a screenshot of each diagram", async ({ page }, testInfo) => {
     await openDemo(page);
     for (const { slug, title } of diagrams) {

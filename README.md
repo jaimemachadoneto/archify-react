@@ -212,22 +212,22 @@ The layout runs on the main thread. A larger spec can make the page slow to answ
 
 The stylesheet reads these host variables. Each one has a fallback for a host that does not define it.
 
-| Host variable         | Fallback                | Styles                                             |
-| --------------------- | ----------------------- | -------------------------------------------------- |
-| `--foreground`        | `CanvasText`            | The text, the edges and the handles.               |
-| `--background`        | `Canvas`                | The pane behind the diagram.                       |
-| `--card`              | `Canvas`                | The node fill, the edge label and the controls.    |
-| `--card-foreground`   | `CanvasText`            | The text in a node and in an edge label.           |
-| `--border`            | `GrayText`              | The frame and the controls.                        |
-| `--muted`             | `Canvas`                | The fill of a lane.                                |
-| `--muted-foreground`  | `GrayText`              | The caption, a lane, a skipped node, a muted line. |
-| `--accent`            | `Canvas`                | The fill of a node under the pointer or selected.  |
-| `--accent-foreground` | `CanvasText`            | The text of that node.                             |
-| `--destructive`       | `LinkText`              | A failed node and a failed edge.                   |
-| `--ring`              | `Highlight`             | The outline of a focused element.                  |
-| `--input`             | `GrayText`              | The dots of the grid behind the diagram.           |
-| `--radius`            | `6px`                   | The corner radius.                                 |
-| `--font-sans`         | `system-ui, sans-serif` | The font family.                                   |
+| Host variable         | Fallback                | Styles                                                 |
+| --------------------- | ----------------------- | ------------------------------------------------------ |
+| `--foreground`        | `CanvasText`            | The text, the edges and the handles.                   |
+| `--background`        | `Canvas`                | The pane behind the diagram.                           |
+| `--card`              | `Canvas`                | The node fill, the edge label and the controls.        |
+| `--card-foreground`   | `CanvasText`            | The text in a node and in an edge label.               |
+| `--border`            | `GrayText`              | The frame and the controls.                            |
+| `--muted`             | `Canvas`                | The fill of a lane and of a node under the pointer.    |
+| `--muted-foreground`  | `GrayText`              | The caption, a lane, a skipped node, a muted line.     |
+| `--accent`            | `Canvas`                | The fill of a selected node, and of a hovered control. |
+| `--accent-foreground` | `CanvasText`            | The text of that node.                                 |
+| `--destructive`       | `LinkText`              | A failed node and a failed edge.                       |
+| `--ring`              | `Highlight`             | The outline of a focused element.                      |
+| `--input`             | `GrayText`              | The dots of the grid behind the diagram.               |
+| `--radius`            | `6px`                   | The corner radius.                                     |
+| `--font-sans`         | `system-ui, sans-serif` | The font family.                                       |
 
 For a look of its own, override the private variables. The rules read only these, so the change stays inside the diagram.
 

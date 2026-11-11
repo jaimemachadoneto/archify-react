@@ -88,7 +88,38 @@ describe("the contrast of the stylesheet", () => {
       const fill = declared(".archify-lane", "background");
       expect(contrast(colour(palette, text), colour(palette, fill))).toBeGreaterThanOrEqual(4.5);
     });
+
+    for (const [name, selector] of [
+      ["a node under the pointer", ".archify-node:hover"],
+      ["a selected node", ".archify-node--selected"],
+    ]) {
+      it(`keeps the contrast of ${name} (${palette})`, () => {
+        const fill = colour(palette, declared(selector, "background"));
+        const text = colour(palette, declared(selector, "color"));
+        const border = colour(palette, declared(selector, "border-color"));
+        expect(contrast(text, fill), "text").toBeGreaterThanOrEqual(4.5);
+        expect(contrast(border, fill), "border").toBeGreaterThanOrEqual(3);
+      });
+    }
+
+    it(`gives a node under the pointer another fill than a selected node (${palette})`, () => {
+      const hover = colour(palette, declared(".archify-node:hover", "background"));
+      const selected = colour(palette, declared(".archify-node--selected", "background"));
+      expect(hover.toLowerCase()).not.toBe(selected.toLowerCase());
+    });
   }
+
+  it("marks a selected node with more than a colour, and a node under the pointer with less", () => {
+    const selected = rules(css).filter((rule) =>
+      rule.selectors.includes(".archify-node--selected"),
+    );
+    const hover = rules(css).filter((rule) => rule.selectors.includes(".archify-node:hover"));
+    expect(selected.some((rule) => rule.body["font-weight"] === "700")).toBe(true);
+    expect(selected.some((rule) => /inset/.test(rule.body["box-shadow"] ?? ""))).toBe(true);
+    expect(hover.some((rule) => "font-weight" in rule.body || "box-shadow" in rule.body)).toBe(
+      false,
+    );
+  });
 });
 
 describe("the stylesheet", () => {
