@@ -14,7 +14,7 @@ Try the demo at https://jaimemachadoneto.github.io/archify-react/. Read the refe
 Install the package from the release:
 
 ```
-pnpm add https://github.com/jaimemachadoneto/archify-react/releases/download/v0.1.0/archify-react-0.1.0.tgz
+pnpm add https://github.com/jaimemachadoneto/archify-react/releases/download/v0.3.0/archify-react-0.3.0.tgz
 ```
 
 React 19 and react-dom 19 are peer dependencies. The package declares `@xyflow/react` and `elkjs` as its own dependencies.
