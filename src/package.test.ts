@@ -131,6 +131,7 @@ describe("packed package", () => {
       "LaneBox",
       "EdgeSection",
       "ProblemCode",
+      "PROBLEM_CODES",
       "MAX_NODES",
       "MAX_EDGES",
       "MAX_LABEL_LENGTH",

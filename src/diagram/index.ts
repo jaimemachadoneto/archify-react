@@ -9,6 +9,7 @@ export type {
   Problem,
   ProblemCode,
 } from "./spec";
+export { PROBLEM_CODES } from "./spec";
 export { validateSpec, MAX_NODES, MAX_EDGES, MAX_LABEL_LENGTH, MAX_POSITION } from "./validate";
 export { layoutDiagram, findOverlaps } from "./layout";
 export type { LayoutResult, LaneBox, EdgeSection } from "./layout";

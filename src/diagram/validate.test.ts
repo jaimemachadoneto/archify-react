@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { validateSpec, MAX_EDGES, MAX_LABEL_LENGTH, MAX_NODES, MAX_POSITION } from "./validate";
-import type { DiagramSpec, Problem } from "./spec";
+import { PROBLEM_CODES, type DiagramSpec, type Problem, type ProblemCode } from "./spec";
 
 function baseSpec(): DiagramSpec {
   return {
@@ -356,5 +356,50 @@ describe("Problem", () => {
     // @ts-expect-error: the code is a union of the known codes, not any string.
     const unknown: Problem = { code: "NOT_A_CODE", message: "" };
     expect([known.code, unknown.code]).toEqual(["INVALID_SHAPE", "NOT_A_CODE"]);
+  });
+});
+
+describe("PROBLEM_CODES", () => {
+  // One invalid input for each code. A code that the list lacks, or that nothing produces, fails the test.
+  const lanes = [{ id: "l", label: "L" }];
+  const inputs: Record<ProblemCode, unknown> = {
+    INVALID_SHAPE: { version: 1, nodes: "none", edges: [] },
+    INVALID_VERSION: { ...baseSpec(), version: 2 },
+    TOO_MANY_NODES: {
+      ...baseSpec(),
+      nodes: Array.from({ length: MAX_NODES + 1 }, (_, i) => ({ id: `n${i}`, label: "N" })),
+    },
+    TOO_MANY_EDGES: {
+      ...baseSpec(),
+      edges: Array.from({ length: MAX_EDGES + 1 }, (_, i) => ({
+        id: `e${i}`,
+        source: "a",
+        target: "b",
+      })),
+    },
+    LABEL_TOO_LONG: {
+      ...baseSpec(),
+      nodes: [{ id: "a", label: "x".repeat(MAX_LABEL_LENGTH + 1) }],
+    },
+    DUPLICATE_LANE_ID: { ...baseSpec(), lanes: [...lanes, ...lanes] },
+    DUPLICATE_NODE_ID: { ...baseSpec(), nodes: [...baseSpec().nodes, { id: "a", label: "A2" }] },
+    DUPLICATE_EDGE_ID: { ...baseSpec(), edges: [...baseSpec().edges, ...baseSpec().edges] },
+    EDGE_SOURCE_NOT_FOUND: { ...baseSpec(), edges: [{ id: "e1", source: "x", target: "b" }] },
+    EDGE_TARGET_NOT_FOUND: { ...baseSpec(), edges: [{ id: "e1", source: "a", target: "x" }] },
+    NODE_LANE_NOT_FOUND: { ...baseSpec(), nodes: [{ id: "a", label: "A", lane: "x" }] },
+  };
+
+  it("has the 11 codes, each one once", () => {
+    expect(PROBLEM_CODES).toHaveLength(11);
+    expect(new Set(PROBLEM_CODES).size).toBe(PROBLEM_CODES.length);
+  });
+
+  it.each(Object.entries(inputs))("lists %s, which validateSpec produces", (code, input) => {
+    expect(validateSpec(input).map((problem) => problem.code)).toContain(code);
+    expect(PROBLEM_CODES).toContain(code);
+  });
+
+  it("lists only codes that the test above covers", () => {
+    expect([...PROBLEM_CODES].sort()).toEqual(Object.keys(inputs).sort());
   });
 });

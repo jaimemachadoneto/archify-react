@@ -30,18 +30,22 @@ export interface DiagramEdge {
   animated?: boolean;
 }
 
-export type ProblemCode =
-  | "INVALID_SHAPE"
-  | "INVALID_VERSION"
-  | "TOO_MANY_NODES"
-  | "TOO_MANY_EDGES"
-  | "LABEL_TOO_LONG"
-  | "DUPLICATE_LANE_ID"
-  | "DUPLICATE_NODE_ID"
-  | "DUPLICATE_EDGE_ID"
-  | "EDGE_SOURCE_NOT_FOUND"
-  | "EDGE_TARGET_NOT_FOUND"
-  | "NODE_LANE_NOT_FOUND";
+// The type comes from this list, so a host and the reference page read the same codes.
+export const PROBLEM_CODES = [
+  "INVALID_SHAPE",
+  "INVALID_VERSION",
+  "TOO_MANY_NODES",
+  "TOO_MANY_EDGES",
+  "LABEL_TOO_LONG",
+  "DUPLICATE_LANE_ID",
+  "DUPLICATE_NODE_ID",
+  "DUPLICATE_EDGE_ID",
+  "EDGE_SOURCE_NOT_FOUND",
+  "EDGE_TARGET_NOT_FOUND",
+  "NODE_LANE_NOT_FOUND",
+] as const;
+
+export type ProblemCode = (typeof PROBLEM_CODES)[number];
 
 export interface Problem {
   code: ProblemCode;
