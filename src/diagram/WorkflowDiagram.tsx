@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FC,
+  type KeyboardEvent,
+} from "react";
 import { Background, Controls, Position, ReactFlow } from "@xyflow/react";
 import { layoutDiagram, type LayoutResult } from "./layout";
 import type { DiagramSpec } from "./spec";
@@ -14,7 +22,7 @@ export interface WorkflowDiagramProps {
   spec: DiagramSpec;
   selectedId: string | null;
   // Pass a stable function (for example a state setter), or the component rebuilds the nodes on each render.
-  // The ID of the node that the user selects. A click on the empty pane gives null, when a node is selected.
+  // The ID of the node that the user selects. A click on the empty pane or the Escape key gives null, when a node is selected.
   onSelect: (id: string | null) => void;
   height: number;
   ariaLabel: string;
@@ -147,6 +155,14 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
     if (selectedId !== null) onSelect(null);
   }, [selectedId, onSelect]);
 
+  // A keyboard user clears the selection like a click on the empty pane does. The key can come from a node or a control.
+  const onKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === "Escape" && selectedId !== null) onSelect(null);
+    },
+    [selectedId, onSelect],
+  );
+
   const vertical = shown?.spec.direction === "DOWN";
   const stepNodes = useMemo<DiagramFlowNode[]>(() => {
     if (!layout) return [];
@@ -260,7 +276,14 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
   }
 
   return (
-    <div ref={guardRef} role="group" aria-label={ariaLabel} aria-busy={busy} style={wrapper}>
+    <div
+      ref={guardRef}
+      role="group"
+      aria-label={ariaLabel}
+      aria-busy={busy}
+      style={wrapper}
+      onKeyDown={onKeyDown}
+    >
       <ReactFlow<DiagramFlowNode | LaneFlowNode, DiagramFlowEdge>
         nodes={flowNodes}
         edges={edges}

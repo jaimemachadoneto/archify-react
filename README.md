@@ -42,7 +42,7 @@ export function Trace({ spec }: { spec: DiagramSpec }) {
 ```
 
 1. Import `archify-react/styles.css` one time. The JavaScript of the package imports no CSS.
-2. Keep the selected ID in your state. The component holds no selection. A click on the empty pane calls `onSelect(null)` when a node is selected, so a state setter clears the selection. A pan or a zoom does not call `onSelect`.
+2. Keep the selected ID in your state. The component holds no selection. A click on the empty pane or the Escape key calls `onSelect(null)` when a node is selected, so a state setter clears the selection. A pan or a zoom does not call `onSelect`.
 3. Give `onSelect` a stable function, for example a state setter. A new function on each render builds the nodes again.
 
 If your app does not define the host variables, define them in your CSS. This example sets six of them:
@@ -62,16 +62,18 @@ Without these variables, the diagram uses the system colours. A failed edge draw
 
 The root element of the component takes the width of its parent element.
 
-| Prop         | Type                           | Default  | Description                                                                                                                     |
-| ------------ | ------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `spec`       | `DiagramSpec`                  | required | The diagram to draw.                                                                                                            |
-| `selectedId` | `string \| null`               | required | The ID of the selected node.                                                                                                    |
-| `onSelect`   | `(id: string \| null) => void` | required | Called with the ID when the user selects a node. Called with `null` when the user clicks the empty pane and a node is selected. |
-| `height`     | `number`                       | required | The height of the diagram in pixels.                                                                                            |
-| `ariaLabel`  | `string`                       | required | The label of the diagram group.                                                                                                 |
-| `highlight`  | `boolean`                      | `true`   | Reduces the opacity of the nodes and edges outside the path of the node under the pointer or with focus.                        |
+| Prop         | Type                           | Default  | Description                                                                                                                                       |
+| ------------ | ------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `spec`       | `DiagramSpec`                  | required | The diagram to draw.                                                                                                                              |
+| `selectedId` | `string \| null`               | required | The ID of the selected node.                                                                                                                      |
+| `onSelect`   | `(id: string \| null) => void` | required | Called with the ID when the user selects a node. Called with `null` when the user clicks the empty pane or presses Escape and a node is selected. |
+| `height`     | `number`                       | required | The height of the diagram in pixels.                                                                                                              |
+| `ariaLabel`  | `string`                       | required | The label of the diagram group.                                                                                                                   |
+| `highlight`  | `boolean`                      | `true`   | Reduces the opacity of the nodes and edges outside the path of the node under the pointer or with focus.                                          |
 
 A new `spec` object with the same content does not run the layout again.
+
+`onSelect` can receive `null`. A handler with the type `(id: string) => void` does not compile. Give it the type `(id: string | null) => void`.
 
 ## The spec
 
@@ -251,7 +253,8 @@ The stylesheet is plain CSS. It is not in a CSS layer. It imports the base rules
 - A failed edge shows its state with the danger colour and a wider line only.
 - A problem and an error show in a region with the role `alert`.
 - The animation stops when the user prefers reduced motion.
-- On a touch device, a swipe up or down on the diagram scrolls the page.
+- On a device with a coarse pointer, a swipe up or down on the diagram scrolls the page.
+- The Escape key in the diagram calls `onSelect(null)` when a node is selected. The keyboard user clears the selection like a click on the empty pane does.
 
 ## Test a host
 
@@ -346,7 +349,8 @@ jsdom does no layout: `getBoundingClientRect` gives zeros, so a test cannot chec
 
 ## Known limits
 
-- On a touch device (a coarse pointer), a vertical swipe on the diagram scrolls the page, also when the swipe starts on a node. A horizontal swipe pans the diagram. A touch cannot pan the diagram up or down, so give a tall diagram a `height` that shows all of it. The zoom controls work as before. A device with a mouse as the main pointer, such as a laptop with a touch screen, keeps the React Flow behavior: `touch-action: none` on the pane, and a touch pans the diagram in all directions.
+- On a device with a coarse pointer, a vertical swipe on the diagram scrolls the page. A swipe that starts on a node also scrolls the page. A horizontal swipe pans the diagram. A one-finger touch cannot pan the diagram up or down, so give a tall diagram a `height` that shows all of it. The zoom controls work as before. A device with a mouse as the main pointer, such as a laptop with a touch screen, keeps the React Flow behaviour. The pane has `touch-action: none`, and a touch pans the diagram in all directions.
+- On a device with a coarse pointer, the library stops the `touchmove` events of a vertical one-finger swipe that starts on the diagram. A listener on an ancestor element or on `document` does not get these events, for example a swipe-to-close drawer, pull-to-refresh or an analytics script. A listener in the capture phase on an ancestor still gets them.
 - The diagram needs a parent with a width.
 - The React Flow attribution stays visible.
 - A long label stops after two lines, or one line with a caption. The `title` of the node shows all of it.

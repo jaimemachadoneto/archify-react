@@ -137,6 +137,47 @@ describe("WorkflowDiagram", () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  describe("the Escape key", () => {
+    it("calls onSelect with null when a node is selected and the key goes to a node", async () => {
+      const onSelect = vi.fn();
+      draw(baseSpec, { selectedId: "alpha", onSelect });
+      const alpha = await screen.findByRole("button", { name: /Alpha/ });
+      alpha.focus();
+      await userEvent.keyboard("{Escape}");
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(onSelect).toHaveBeenCalledWith(null);
+    });
+
+    it("calls onSelect with null when the key goes to a zoom control", async () => {
+      const onSelect = vi.fn();
+      draw(baseSpec, { selectedId: "beta", onSelect });
+      await screen.findByRole("button", { name: /Alpha/ });
+      const control = screen.getByRole("button", { name: /zoom in/i });
+      control.focus();
+      await userEvent.keyboard("{Escape}");
+      expect(onSelect).toHaveBeenCalledTimes(1);
+      expect(onSelect).toHaveBeenCalledWith(null);
+    });
+
+    it("does not call onSelect when nothing is selected", async () => {
+      const onSelect = vi.fn();
+      draw(baseSpec, { onSelect });
+      const alpha = await screen.findByRole("button", { name: /Alpha/ });
+      alpha.focus();
+      await userEvent.keyboard("{Escape}");
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it("ignores the other keys", async () => {
+      const onSelect = vi.fn();
+      draw(baseSpec, { selectedId: "alpha", onSelect });
+      const alpha = await screen.findByRole("button", { name: /Alpha/ });
+      alpha.focus();
+      await userEvent.keyboard("{Tab}a");
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+  });
+
   it("gives the id, not null, for a click on a node when another node is selected", async () => {
     const onSelect = vi.fn();
     draw(baseSpec, { selectedId: "alpha", onSelect });

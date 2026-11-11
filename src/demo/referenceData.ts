@@ -28,7 +28,7 @@ export const PROPS: PropRow[] = [
     type: "(id: string | null) => void",
     defaultValue: "required",
     description:
-      "Called with the ID when the user selects a node. Called with null when the user clicks the empty pane and a node is selected.",
+      "Called with the ID when the user selects a node. Called with null when the user clicks the empty pane or presses Escape and a node is selected.",
   },
   {
     name: "height",

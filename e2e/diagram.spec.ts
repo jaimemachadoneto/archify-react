@@ -231,6 +231,21 @@ test.describe("the demo page", () => {
     await expect(panel).toContainText("Select a step");
   });
 
+  test("clears the selection with the Escape key", async ({ page }) => {
+    await openDemo(page);
+    const node = nodesOf(page, "Retry loop").filter({ hasText: "Wait and retry" });
+    const panel = panelOf(page, "Retry loop");
+    await node.focus();
+    await page.keyboard.press("Enter");
+    await expect(node).toHaveAttribute("aria-pressed", "true");
+    await expect(panel).toContainText("The job waits twice as long");
+    await page.keyboard.press("Escape");
+    await expect(node).toHaveAttribute("aria-pressed", "false");
+    await expect(panel).toContainText("Select a step");
+    // The focus stays on the node, so the keyboard user does not lose the place.
+    await expect(node).toBeFocused();
+  });
+
   test("keeps the selection when the mouse pans the diagram", async ({ page }) => {
     await openDemo(page);
     const scope = diagram(page, "Retry loop");
