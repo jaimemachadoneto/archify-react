@@ -185,6 +185,8 @@ The result holds three lists:
 
 The function returns each pair of nodes whose boxes cover each other. Use it in a test that proves the layout stays clear.
 
+The function examines nodes only. It does not examine lanes. A node with a fixed `position` can leave its lane, and the box of the lane then grows. Such a box can cover another lane or a node of another lane, and the function does not report it. To find that, compare the `lanes` boxes of the result in your own test.
+
 ### reach(spec, id, direction)
 
 `direction` is `"upstream"` or `"downstream"`. The function returns the IDs of the nodes on that side of the node, and it includes the node itself.
