@@ -31,4 +31,13 @@ describe("the stylesheet", () => {
       expect(hostReads, rule.trim().split("{")[0]).toEqual([]);
     }
   });
+
+  it("lets a vertical swipe on a touch device scroll the page", () => {
+    // React Flow sets touch-action none on the pane, and a node inherits it. This rule must win by its specificity.
+    const media = css.match(
+      /@media\s*\(\s*pointer\s*:\s*coarse\s*\)\s*\{\s*\.archify-diagram \.react-flow__pane\s*\{([^}]*)\}/,
+    );
+    expect(media, "a coarse pointer rule for the pane").not.toBeNull();
+    expect(media![1]).toMatch(/touch-action\s*:\s*pan-y\s*;/);
+  });
 });

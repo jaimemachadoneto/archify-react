@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState, type FC } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react";
 import { Background, Controls, Position, ReactFlow } from "@xyflow/react";
 import { layoutDiagram, type LayoutResult } from "./layout";
 import type { DiagramSpec } from "./spec";
 import { reach } from "./reach";
 import { validateSpec } from "./validate";
+import { guardVerticalSwipe } from "./touchScroll";
 import Node, { type DiagramFlowNode } from "./components/Node";
 import Lane, { type LaneFlowNode } from "./components/Lane";
 import FlowEdgeView, { type DiagramFlowEdge } from "./components/FlowEdge";
@@ -135,6 +136,13 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
     }));
   }, [layout, spec, valid]);
 
+  const stopGuard = useRef<(() => void) | null>(null);
+  // The group element is not in the tree for the whole life of the component, so a ref callback sets the guard.
+  const guardRef = useCallback((element: HTMLDivElement | null) => {
+    stopGuard.current?.();
+    stopGuard.current = element === null ? null : guardVerticalSwipe(element);
+  }, []);
+
   const onPaneClick = useCallback(() => {
     if (selectedId !== null) onSelect(null);
   }, [selectedId, onSelect]);
@@ -252,7 +260,7 @@ const WorkflowDiagram: FC<WorkflowDiagramProps> = ({
   }
 
   return (
-    <div role="group" aria-label={ariaLabel} aria-busy={busy} style={wrapper}>
+    <div ref={guardRef} role="group" aria-label={ariaLabel} aria-busy={busy} style={wrapper}>
       <ReactFlow<DiagramFlowNode | LaneFlowNode, DiagramFlowEdge>
         nodes={flowNodes}
         edges={edges}

@@ -272,6 +272,16 @@
   cursor: default;
 }
 
+/* React Flow sets touch-action none on the pane, and a node inherits it. A swipe on the diagram then cannot scroll the page.
+   pan-y lets the browser scroll the page for a vertical swipe. A horizontal swipe still pans the diagram.
+   d3-zoom also cancels the touchmove event, so touchScroll.ts keeps a vertical swipe away from it.
+   A mouse is not affected, so the rule is only for a device with a coarse pointer. */
+@media (pointer: coarse) {
+  .archify-diagram .react-flow__pane {
+    touch-action: pan-y;
+  }
+}
+
 .archify-diagram .react-flow__controls {
   overflow: hidden;
   border: 1px solid var(--archify-border);

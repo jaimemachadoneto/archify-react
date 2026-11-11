@@ -246,6 +246,14 @@ test.describe("the demo page", () => {
     await expect(node).toHaveAttribute("aria-pressed", "true");
   });
 
+  test("keeps the pane touch action at none for a mouse on a desktop", async ({ page }) => {
+    await openDemo(page);
+    await expect(diagram(page, "Retry loop").locator(".react-flow__pane")).toHaveCSS(
+      "touch-action",
+      "none",
+    );
+  });
+
   test("selects a focused node with the Enter key and shows a focus ring", async ({ page }) => {
     await openDemo(page);
     await tabToNode(page);

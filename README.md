@@ -249,10 +249,11 @@ The stylesheet is plain CSS. It is not in a CSS layer. It imports the base rules
 - A failed edge shows its state with the danger colour and a wider line only.
 - A problem and an error show in a region with the role `alert`.
 - The animation stops when the user prefers reduced motion.
+- On a touch device, a swipe up or down on the diagram scrolls the page.
 
 ## Known limits
 
-- The pane sets `touch-action: none`. A touch on the diagram does not scroll the page.
+- On a touch device (a coarse pointer), a vertical swipe on the diagram scrolls the page, also when the swipe starts on a node. A horizontal swipe pans the diagram. A touch cannot pan the diagram up or down, so give a tall diagram a `height` that shows all of it. The zoom controls work as before. A device with a mouse as the main pointer, such as a laptop with a touch screen, keeps the React Flow behavior: `touch-action: none` on the pane, and a touch pans the diagram in all directions.
 - The diagram needs a parent with a width.
 - The React Flow attribution stays visible.
 - A long label stops after two lines, or one line with a caption. The `title` of the node shows all of it.
