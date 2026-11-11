@@ -72,6 +72,35 @@ describe("guardVerticalSwipe", () => {
     expect(reached).toEqual(["touchstart", "touchend", "touchstart", "touchmove"]);
   });
 
+  it("decides again after a touchcancel", () => {
+    pane.dispatchEvent(touch("touchstart", [[100, 200]]));
+    pane.dispatchEvent(touch("touchmove", [[100, 150]]));
+    pane.dispatchEvent(touch("touchcancel", []));
+    // A move with no new start is free again: the cancel ended the vertical verdict.
+    pane.dispatchEvent(touch("touchmove", [[100, 140]]));
+    pane.dispatchEvent(touch("touchstart", [[100, 200]]));
+    pane.dispatchEvent(touch("touchmove", [[150, 200]]));
+    expect(reached).toEqual(["touchstart", "touchmove", "touchstart", "touchmove"]);
+  });
+
+  it("keeps a vertical move from a bubble listener on an ancestor, and a capture listener still gets it", () => {
+    const bubble: string[] = [];
+    const capture: string[] = [];
+    const remove = new AbortController();
+    document.addEventListener("touchmove", () => bubble.push("touchmove"), {
+      signal: remove.signal,
+    });
+    document.addEventListener("touchmove", () => capture.push("touchmove"), {
+      capture: true,
+      signal: remove.signal,
+    });
+    pane.dispatchEvent(touch("touchstart", [[100, 200]]));
+    pane.dispatchEvent(touch("touchmove", [[100, 150]]));
+    remove.abort();
+    expect(bubble, "a bubble listener on the document").toEqual([]);
+    expect(capture, "a capture listener on the document").toEqual(["touchmove"]);
+  });
+
   it("gives a move with two fingers to the pane, so the user can pinch", () => {
     pane.dispatchEvent(touch("touchstart", [[100, 200]]));
     pane.dispatchEvent(touch("touchmove", [[100, 190]]));

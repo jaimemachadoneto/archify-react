@@ -395,7 +395,10 @@ describe("PROBLEM_CODES", () => {
   });
 
   it.each(Object.entries(inputs))("lists %s, which validateSpec produces", (code, input) => {
-    expect(validateSpec(input).map((problem) => problem.code)).toContain(code);
+    const produced = validateSpec(input).map((problem) => problem.code);
+    expect(produced).toContain(code);
+    // Every code that the function produces is in the list, not only the one that the input aims at.
+    for (const each of produced) expect(PROBLEM_CODES).toContain(each);
     expect(PROBLEM_CODES).toContain(code);
   });
 

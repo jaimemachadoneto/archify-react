@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, describe, it, expect, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import WorkflowDiagram from "./WorkflowDiagram";
@@ -680,6 +680,42 @@ describe("WorkflowDiagram", () => {
     const button = await screen.findByRole("button", { name: /Alpha/ });
     expect(container.querySelector(".react-flow__node-step")).toHaveStyle({ pointerEvents: "all" });
     expect(button.style.pointerEvents).toBe("");
+  });
+
+  describe("the touch guard", () => {
+    function touch(type: string, points: Array<[number, number]>): Event {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperty(event, "touches", {
+        value: points.map(([clientX, clientY]) => ({ clientX, clientY })),
+      });
+      return event;
+    }
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("keeps a vertical touch move away from the pane, and stops when the diagram unmounts", async () => {
+      vi.stubGlobal(
+        "matchMedia",
+        vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+      );
+      const { container, unmount } = draw(baseSpec);
+      await screen.findByRole("button", { name: /Alpha/ });
+      const pane = container.querySelector(".react-flow__pane")!;
+      const reached: string[] = [];
+      pane.addEventListener("touchstart", () => reached.push("touchstart"));
+      pane.addEventListener("touchmove", () => reached.push("touchmove"));
+
+      pane.dispatchEvent(touch("touchstart", [[100, 200]]));
+      pane.dispatchEvent(touch("touchmove", [[100, 150]]));
+      expect(reached, "a vertical move").toEqual(["touchstart"]);
+
+      unmount();
+      pane.dispatchEvent(touch("touchstart", [[100, 200]]));
+      pane.dispatchEvent(touch("touchmove", [[100, 150]]));
+      expect(reached, "after the unmount").toEqual(["touchstart", "touchstart", "touchmove"]);
+    });
   });
 
   it("marks the node button nopan, so that a drag on a node does not pan the diagram", async () => {

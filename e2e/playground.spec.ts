@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { emptyPanePoint } from "./helpers";
 
 const diagram = (page: Page): Locator => page.getByRole("group", { name: "Playground diagram" });
 const nodes = (page: Page): Locator => diagram(page).locator("button.archify-node");
@@ -161,19 +162,8 @@ test.describe("the playground", () => {
     await label.click();
     // The label is not the pane, so the click keeps the selection.
     await expect(node).toHaveAttribute("aria-pressed", "true");
-    const point = await diagram(page)
-      .locator(".react-flow__pane")
-      .evaluate((el) => {
-        const rect = el.getBoundingClientRect();
-        for (let y = rect.top + 8; y < rect.bottom - 8; y += 8) {
-          for (let x = rect.left + 8; x < rect.right - 8; x += 8) {
-            if (document.elementFromPoint(x, y) === el) return { x, y };
-          }
-        }
-        return null;
-      });
-    expect(point, "an empty point on the pane").not.toBeNull();
-    await page.mouse.click(point!.x, point!.y);
+    const point = await emptyPanePoint(diagram(page).locator(".react-flow__pane"));
+    await page.mouse.click(point.x, point.y);
     await expect(node).toHaveAttribute("aria-pressed", "false");
   });
 
@@ -211,7 +201,10 @@ test.describe("the playground", () => {
   test("never shows a new edge dot at the origin of the SVG, and shows it after the start", async ({
     page,
   }) => {
-    // A dot has no position until the first sample of its animation. A browser can paint that frame (seen in WebKit).
+    // This test guards the state before the first frame of a new dot, in Chromium only. Chromium never painted the defect.
+    // The defect was seen in WebKit: a dot has no position until the first sample of its animation, and WebKit painted
+    // that frame at the origin of the SVG. A temporary WebKit configuration measured it by hand.
+    // `pnpm exec playwright test -c playwright.webkit.config.ts` runs this test in WebKit. The CI does not run it.
     await page.addInitScript(() => {
       type Sample = { visible: boolean; atOrigin: boolean };
       const samples: Sample[] = [];

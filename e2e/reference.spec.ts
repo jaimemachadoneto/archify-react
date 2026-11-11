@@ -31,7 +31,6 @@ test.describe("the reference page", () => {
 
     const codes = await rowsOf(page, "Problem codes");
     expect(codes.map(([code]) => code)).toEqual([...PROBLEM_CODES]);
-    expect(codes).toHaveLength(11);
 
     const limits = Object.fromEntries(
       await rowsOf(page, "Limits").then((r) => r.map((c) => c.slice(0, 2))),
@@ -42,10 +41,6 @@ test.describe("the reference page", () => {
       MAX_LABEL_LENGTH: String(MAX_LABEL_LENGTH),
       MAX_POSITION: String(MAX_POSITION),
     });
-
-    expect(await rowsOf(page, "Host variables")).toHaveLength(14);
-    expect(await rowsOf(page, "Props of WorkflowDiagram")).toHaveLength(6);
-    expect(await rowsOf(page, "Functions")).toHaveLength(4);
 
     // The demo does not load on this page.
     await expect(page.getByRole("heading", { level: 2, name: "Playground" })).toHaveCount(0);

@@ -87,8 +87,13 @@ async function drawAndTurn(onSelect: (id: string | null) => void = () => {}): Pr
       await waitFor(() => {
         expect(screen.getByRole("group", { name: "Trace" })).not.toHaveAttribute("aria-busy");
       });
-      // The handles move in the next render after the new layout.
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // The handles move to the bottom of the nodes in the render after the new layout. That
+      // render is the one that reads the zoom, so the handles are the signal that it is done.
+      await waitFor(() => {
+        if (errors.length === 0) {
+          expect(document.querySelector(".react-flow__handle-bottom")).not.toBeNull();
+        }
+      });
     }
   } catch (error) {
     errors.push(error);

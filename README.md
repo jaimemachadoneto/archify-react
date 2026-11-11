@@ -369,6 +369,8 @@ These commands work in the project shell:
 | `build`    | Builds the library and the demo. `pnpm build:lib` writes the library to `dist/`. `pnpm build` also writes the demo to `dist-demo/`. |
 | `pnpm e2e` | Runs the browser tests. It needs the browsers of the devenv shell.                                                                  |
 
+`pnpm exec playwright test -c playwright.webkit.config.ts` runs the test of the edge dot in WebKit, where the first frame of a new dot showed a defect. It needs the WebKit browser, and the CI does not run it.
+
 `pnpm build:pages` writes the demo for the project site, with `/archify-react/` as the base. The workflow `.github/workflows/pages.yaml` publishes it.
 
 The demo page holds three examples and a playground. The link Reference at the top opens the reference page at `#reference`. A hash route works on GitHub Pages, which has no fallback for a path. The page reads the limits and the problem codes from the library, and a test compares its tables with this file and with the stylesheet. The playground has controls for the direction, the highlight, the spec and the look. Run `pnpm dev`. Then open `http://localhost:5173`. The demo reads the same variables as a host app. A click on the empty pane in the playground clears the selected step ID.

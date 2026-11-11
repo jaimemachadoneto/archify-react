@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { emptyPanePoint } from "./helpers";
 
 // One entry for each diagram of the demo page. The labels are the ones in Demo.tsx.
 const diagrams = [
@@ -201,23 +202,6 @@ test.describe("the demo page", () => {
     await expect(node).toBeFocused();
   });
 
-  // A point on the pane where no node, edge or control is under the pointer.
-  async function emptyPanePoint(page: Page, title: string): Promise<{ x: number; y: number }> {
-    const point = await diagram(page, title)
-      .locator(".react-flow__pane")
-      .evaluate((el) => {
-        const box = el.getBoundingClientRect();
-        for (let y = box.top + 8; y < box.bottom - 8; y += 8) {
-          for (let x = box.left + 8; x < box.right - 8; x += 8) {
-            if (document.elementFromPoint(x, y) === el) return { x, y };
-          }
-        }
-        return null;
-      });
-    expect(point, "an empty point on the pane").not.toBeNull();
-    return point!;
-  }
-
   test("clears the selection with a click on the empty pane", async ({ page }) => {
     await openDemo(page);
     const node = nodesOf(page, "Retry loop").filter({ hasText: "Wait and retry" });
@@ -225,7 +209,7 @@ test.describe("the demo page", () => {
     await node.click();
     await expect(node).toHaveAttribute("aria-pressed", "true");
     await diagram(page, "Retry loop").evaluate((el) => el.scrollIntoView({ block: "center" }));
-    const { x, y } = await emptyPanePoint(page, "Retry loop");
+    const { x, y } = await emptyPanePoint(diagram(page, "Retry loop").locator(".react-flow__pane"));
     await page.mouse.click(x, y);
     await expect(node).toHaveAttribute("aria-pressed", "false");
     await expect(panel).toContainText("Select a step");
@@ -254,7 +238,7 @@ test.describe("the demo page", () => {
     await scope.evaluate((el) => el.scrollIntoView({ block: "center" }));
     const viewport = scope.locator(".react-flow__viewport");
     const before = await viewport.evaluate((el) => (el as HTMLElement).style.transform);
-    const { x, y } = await emptyPanePoint(page, "Retry loop");
+    const { x, y } = await emptyPanePoint(diagram(page, "Retry loop").locator(".react-flow__pane"));
     await page.mouse.move(x, y);
     await page.mouse.down();
     await page.mouse.move(x + 30, y + 10, { steps: 5 });
