@@ -291,6 +291,17 @@ The test `src/diagram/hostTesting.test.tsx` of this repository runs this code bl
 | `getBBox`           | An edge with a `label` throws `getBBox is not a function` after the layout.     |
 | `DOMMatrixReadOnly` | A change of `direction` throws `window.DOMMatrixReadOnly is not a constructor`. |
 
+### Clean up after each test
+
+Testing Library removes the rendered diagram after each test only when the test runner has a global `afterEach`. Vitest has no global `afterEach` unless the config sets `globals: true`. Without it, the diagram of one test stays in the document in the next test. Call `cleanup` after each test, for example in the same setup file:
+
+```ts
+import { cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
+
+afterEach(() => cleanup());
+```
+
 ### Wait for the layout
 
 The layout is asynchronous, so the nodes are not in the first render. Until the layout is ready, the group of the diagram has `aria-busy="true"` and holds no node. When the layout is ready, the nodes are buttons and `aria-busy` is gone.
