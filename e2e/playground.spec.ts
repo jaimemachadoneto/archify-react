@@ -111,6 +111,34 @@ test.describe("the playground", () => {
     await expect.poll(card).toBe(testInfo.project.name === "dark" ? "#083344" : "#ecfeff");
   });
 
+  test("draws the border of a lane with at least 3 to 1 against its fill", async ({ page }) => {
+    await openPlayground(page);
+    const measure = () =>
+      diagram(page)
+        .locator(".archify-lane")
+        .first()
+        .evaluate((el) => {
+          const style = getComputedStyle(el);
+          const channels = (colour: string) =>
+            colour
+              .match(/[\d.]+/g)!
+              .slice(0, 3)
+              .map(Number);
+          const luminance = (colour: string) => {
+            const [r, g, b] = channels(colour).map((v) => {
+              const c = v / 255;
+              return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+            });
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          };
+          const [a, b] = [luminance(style.borderTopColor), luminance(style.backgroundColor)];
+          return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+        });
+    expect(await measure(), "host variables").toBeGreaterThanOrEqual(3);
+    await page.getByRole("combobox", { name: "Look" }).selectOption({ label: "Custom palette" });
+    expect(await measure(), "custom palette").toBeGreaterThanOrEqual(3);
+  });
+
   test("shows the whole diagram inside its frame on a phone, also after a change", async ({
     page,
   }) => {

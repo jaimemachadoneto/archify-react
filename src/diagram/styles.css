@@ -183,10 +183,11 @@
 
 /* Lanes */
 
+/* The border of a lane uses the muted text colour: --border is too close to the fill of a lane (1.1 to 1). */
 .archify-lane {
   position: relative;
   box-sizing: border-box;
-  border: 1px solid var(--archify-border);
+  border: 1px solid var(--archify-muted-fg);
   border-radius: var(--archify-radius);
   background: var(--archify-muted);
 }
