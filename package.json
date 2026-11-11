@@ -1,7 +1,7 @@
 {
   "name": "archify-react",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Draw a workflow diagram in a React app.",
   "license": "MIT",
   "author": "Jaime Machado",
