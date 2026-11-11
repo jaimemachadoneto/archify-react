@@ -2,7 +2,7 @@
 
 archify-react draws a workflow diagram in a React app. The diagram shows the path of a request through its steps.
 
-Try the demo at https://jaimemachadoneto.github.io/archify-react/.
+Try the demo at https://jaimemachadoneto.github.io/archify-react/. Read the reference at https://jaimemachadoneto.github.io/archify-react/#reference.
 
 - React 19 and react-dom 19 are the peer dependencies. The host needs no Tailwind.
 - The stylesheet is plain CSS.
@@ -146,7 +146,7 @@ The library exports four functions for a host that prepares a spec, or that draw
 
 ### validateSpec(spec: unknown): Problem[]
 
-The function returns the list of problems. The list is empty for a valid spec. A problem has a `code`, a `message` and an optional `path`. The message is English text. Show it to the user as it is.
+The function returns the list of problems. The list is empty for a valid spec. A problem has a `code`, a `message` and an optional `path`. The message is English text. Show it to the user as it is. The array `PROBLEM_CODES` holds all the codes, and the type `ProblemCode` is one of them.
 
 ```ts
 import { validateSpec } from "archify-react";
@@ -207,7 +207,7 @@ The layout runs on the main thread. A larger spec can make the page slow to answ
 ## When the spec has a problem
 
 - If the spec is not valid, the component draws an alert with the list of problems in the place of the diagram.
-- If the layout fails, the component draws an alert with the text of the error, and it sends the error to the console.
+- If the layout fails, the component draws an alert that starts with "The diagram layout failed." and holds the text of the error. It also sends the error to the console.
 - While the next layout runs, the component keeps the last layout on the screen, and it sets `aria-busy` on the diagram.
 
 ## Theme
@@ -356,7 +356,7 @@ These commands work in the project shell:
 
 `pnpm build:pages` writes the demo for the project site, with `/archify-react/` as the base. The workflow `.github/workflows/pages.yaml` publishes it.
 
-The demo page holds three examples and a playground. The playground has controls for the direction, the highlight, the spec and the look. Run `pnpm dev`. Then open `http://localhost:5173`. The demo reads the same variables as a host app. A click on the empty pane in the playground clears the selected step ID.
+The demo page holds three examples and a playground. The link Reference at the top opens the reference page at `#reference`. A hash route works on GitHub Pages, which has no fallback for a path. The page reads the limits and the problem codes from the library, and a test compares its tables with this file and with the stylesheet. The playground has controls for the direction, the highlight, the spec and the look. Run `pnpm dev`. Then open `http://localhost:5173`. The demo reads the same variables as a host app. A click on the empty pane in the playground clears the selected step ID.
 
 ## Licence
 
