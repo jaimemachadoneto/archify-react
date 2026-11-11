@@ -170,6 +170,65 @@ test.describe("the playground", () => {
     await expect.poll(measured).toEqual({ overflow: "ellipsis", cut: true, inside: true });
   });
 
+  test("never shows a new edge dot at the origin of the SVG, and shows it after the start", async ({
+    page,
+  }) => {
+    // A dot has no position until the first sample of its animation. A browser can paint that frame (seen in WebKit).
+    await page.addInitScript(() => {
+      type Sample = { visible: boolean; atOrigin: boolean };
+      const samples: Sample[] = [];
+      (window as unknown as { __samples: Sample[] }).__samples = samples;
+      const sample = (dot: SVGCircleElement) => {
+        const box = dot.getBoundingClientRect();
+        const svg = dot.ownerSVGElement!.getBoundingClientRect();
+        samples.push({
+          visible: getComputedStyle(dot).visibility === "visible",
+          // The circle has a radius of 4 and no offset at the origin.
+          atOrigin: Math.abs(box.x - svg.x + 4) < 1 && Math.abs(box.y - svg.y + 4) < 1,
+        });
+      };
+      new MutationObserver((records) => {
+        for (const record of records) {
+          for (const added of record.addedNodes) {
+            if (!(added instanceof Element)) continue;
+            for (const dot of added.querySelectorAll<SVGCircleElement>("circle.archify-edge-dot")) {
+              sample(dot);
+              // The frames after the insertion: the first paint can come after any of them.
+              let frames = 0;
+              const next = () => {
+                sample(dot);
+                if (++frames < 6) requestAnimationFrame(next);
+              };
+              requestAnimationFrame(next);
+            }
+          }
+        }
+      }).observe(document, { childList: true, subtree: true });
+    });
+    await openPlayground(page);
+    // A new direction gives new paths, so the dots are new.
+    await page.getByRole("radio", { name: "DOWN" }).check();
+    const dots = diagram(page).locator("circle.archify-edge-dot");
+    await expect(dots.first()).toBeAttached();
+    await page.waitForTimeout(500);
+    const samples = await page.evaluate(
+      () =>
+        (window as unknown as { __samples: Array<{ visible: boolean; atOrigin: boolean }> })
+          .__samples,
+    );
+    expect(samples.length, "the test saw new dots").toBeGreaterThan(10);
+    expect(
+      samples.filter((s) => s.visible && s.atOrigin),
+      "a painted dot at the origin",
+    ).toEqual([]);
+    // The dot must not stay hidden: every dot shows when its animation runs.
+    await expect
+      .poll(() =>
+        dots.evaluateAll((all) => all.every((d) => getComputedStyle(d).visibility === "visible")),
+      )
+      .toBe(true);
+  });
+
   test("shows the whole diagram inside its frame on a phone, also after a change", async ({
     page,
   }) => {

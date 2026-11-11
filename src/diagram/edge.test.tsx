@@ -140,6 +140,19 @@ describe("animated edge", () => {
     expect(motion?.parentElement).toHaveClass("archify-edge-dot");
   });
 
+  it("hides the dot until its animation begins, so no frame shows it at the SVG origin", async () => {
+    const container = await draw(specWith({ animated: true }));
+    const dot = container.querySelector(".archify-edge-dot");
+    const motion = dot?.querySelector("animateMotion");
+    const show = dot?.querySelector("set");
+    expect(dot).toHaveAttribute("visibility", "hidden");
+    // The element "set" starts with the motion, so the dot shows with its first position.
+    expect(show).toHaveAttribute("attributeName", "visibility");
+    expect(show).toHaveAttribute("to", "visible");
+    expect(show?.getAttribute("begin")).toBe("0s");
+    expect(motion?.getAttribute("begin")).toBe(show?.getAttribute("begin"));
+  });
+
   it("starts a new dot when the layout changes the path, so the dot never runs along an old path", async () => {
     const base = specWith({ animated: true });
     const props = { selectedId: null, onSelect: () => {}, height: 400, ariaLabel: "Trace" };
