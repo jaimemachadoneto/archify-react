@@ -28,7 +28,7 @@ export default function App() {
         <Button
           variant="ghost"
           size="icon"
-          className="ml-auto shrink-0"
+          className="ml-auto size-11 shrink-0 md:size-9"
           onClick={toggleTheme}
           aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
         >
