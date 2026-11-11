@@ -253,6 +253,86 @@ The stylesheet is plain CSS. It is not in a CSS layer. It imports the base rules
 - The animation stops when the user prefers reduced motion.
 - On a touch device, a swipe up or down on the diagram scrolls the page.
 
+## Test a host
+
+jsdom does no layout and lacks some browser APIs. A test that renders `WorkflowDiagram` under jsdom needs three stubs for browser APIs that React Flow uses. Run this code one time, before the first render, for example in the setup file of the test runner:
+
+```ts host-stubs
+// React Flow observes the size of each node with a ResizeObserver, which jsdom lacks.
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+globalThis.ResizeObserver = ResizeObserverStub;
+
+// React Flow reads the zoom from a DOMMatrixReadOnly when it updates the nodes.
+class DOMMatrixReadOnlyStub {
+  m22: number;
+  constructor(transform?: string) {
+    const scale = transform?.match(/scale\(([\d.]+)\)/)?.[1];
+    this.m22 = scale ? Number(scale) : 1;
+  }
+}
+globalThis.DOMMatrixReadOnly = DOMMatrixReadOnlyStub as unknown as typeof DOMMatrixReadOnly;
+
+// React Flow measures the text of an edge label with getBBox. Without a layout, the box is empty.
+Object.defineProperty(SVGElement.prototype, "getBBox", {
+  configurable: true,
+  value: () => ({ x: 0, y: 0, width: 0, height: 0 }),
+});
+```
+
+The test `src/diagram/hostTesting.test.tsx` of this repository runs this code block as it is. It removes each stub in turn, and the test fails:
+
+| Missing stub        | What fails                                                                      |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `ResizeObserver`    | The first render throws `ResizeObserver is not defined`.                        |
+| `getBBox`           | An edge with a `label` throws `getBBox is not a function` after the layout.     |
+| `DOMMatrixReadOnly` | A change of `direction` throws `window.DOMMatrixReadOnly is not a constructor`. |
+
+### Wait for the layout
+
+The layout is asynchronous, so the nodes are not in the first render. Until the layout is ready, the group of the diagram has `aria-busy="true"` and holds no node. When the layout is ready, the nodes are buttons and `aria-busy` is gone.
+
+With Testing Library, wait for a node button:
+
+```tsx
+render(
+  <WorkflowDiagram
+    spec={spec}
+    selectedId={null}
+    onSelect={onSelect}
+    height={300}
+    ariaLabel="Trace"
+  />,
+);
+const node = await screen.findByRole("button", { name: /Receive request/ }, { timeout: 5000 });
+```
+
+Under load, the first layout can take longer than the default timeout of one second, so give a longer timeout.
+
+After you change the spec, the old layout stays on the screen while the next layout runs, and a new node is not there yet. Wait for `aria-busy` to go:
+
+```tsx
+const group = screen.getByRole("group", { name: "Trace" });
+await waitFor(() => expect(group).not.toHaveAttribute("aria-busy"));
+```
+
+With Playwright, use the same signals:
+
+```ts
+const diagram = page.getByRole("group", { name: "Decision trace" });
+await expect(diagram).not.toHaveAttribute("aria-busy");
+await expect(diagram.getByRole("button", { name: /Receive request/ })).toBeVisible();
+```
+
+To find a node by the ID in the spec, use `diagram.locator('[data-id="step:<id>"]')`. React Flow moves the view to fit the diagram after the first measure. Before a screenshot or a click at a position, wait until the `transform` style of `.react-flow__viewport` stops changing.
+
+### What to test under jsdom
+
+jsdom does no layout: `getBoundingClientRect` gives zeros, so a test cannot check where a node is. Test the structure: the buttons, their names, `aria-pressed` and `data-state`. To test positions, call `layoutDiagram` and `findOverlaps` on the spec. Use Playwright to test what the user sees.
+
 ## Known limits
 
 - On a touch device (a coarse pointer), a vertical swipe on the diagram scrolls the page, also when the swipe starts on a node. A horizontal swipe pans the diagram. A touch cannot pan the diagram up or down, so give a tall diagram a `height` that shows all of it. The zoom controls work as before. A device with a mouse as the main pointer, such as a laptop with a touch screen, keeps the React Flow behavior: `touch-action: none` on the pane, and a touch pans the diagram in all directions.
